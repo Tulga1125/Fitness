@@ -84,7 +84,10 @@ RUN apk add --no-cache bubblewrap \
 # refresh token has no business riding along in every archive that instruction produces. Owned
 # by `coach` because the job that writes it has already dropped to that user.
 RUN mkdir -p /coach-auth && chown coach:coach /coach-auth && chmod 700 /coach-auth
-VOLUME ["/coach-auth"]
+# No VOLUME instruction here on purpose: docker-compose.yml mounts ./coach-auth explicitly, so
+# the declaration only ever told a bare `docker run` to make an anonymous volume — and some
+# platforms (Railway) refuse to build any Dockerfile that contains one, even in a stage they
+# never build.
 
 # ---------------------------------------------------------------------------------------------
 # Last, so that a plain `docker build ./api` keeps producing the runtime-free image.
