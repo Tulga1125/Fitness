@@ -58,13 +58,15 @@ on your phone, synced across your devices, behind your own passkey login.
 >
 > Pull upstream changes later with `git remote add upstream https://github.com/DuarteSantos8/openGym && git fetch upstream`.
 >
-> **Live instance: <https://fitness.sonorgroup.mn>**, deployed on Railway (project `fitness`, two services
-> built from this repo on every push) behind Cloudflare (proxied CNAME, SSL mode *Full*):
+> **Live instance: <https://fitness.tagent.space>**, deployed on Railway (project `fitness`, three services
+> built from this repo on every push) behind Cloudflare (proxied CNAMEs, SSL mode *Full*). The landing
+> page at <https://tagent.space> lives in [`landing/`](landing/).
 >
 > | Service | Build | Settings that differ from the compose stack |
 > |---|---|---|
-> | `api` | `api/Dockerfile`, root directory `/api`, volume at `/data` | `RP_ID=fitness.sonorgroup.mn`, `ORIGIN=https://fitness.sonorgroup.mn`, `TRUST_PROXY=1`, `FIRST_USER_ADMIN=1` |
+> | `api` | `api/Dockerfile`, root directory `/api`, volume at `/data` | `RP_ID=fitness.tagent.space`, `ORIGIN=https://fitness.tagent.space`, `TRUST_PROXY=1`, `FIRST_USER_ADMIN=1` |
 > | `web` | `web/Dockerfile` (`RAILWAY_DOCKERFILE_PATH`), public port 8080 | `NGINX_PORT=8080`, `BACKEND=api.railway.internal`, `RESOLVER=[fd12::10]`, `RESOLVER_IPV6=on`, `CF_CONNECTING_IP=$http_cf_connecting_ip` |
+> | `landing` | `landing/Dockerfile`, root directory `/landing`, public port 8080 | serves `tagent.space` and `www.tagent.space` |
 >
 > Railway's private network is IPv6-only, which is what `RESOLVER_IPV6` exists for, and its builder
 > refuses a Dockerfile with a `VOLUME` instruction, which is why `api/Dockerfile` has none.
