@@ -88,6 +88,11 @@ ENV PORT=3000
 # resolver makes every /api request hang rather than fail, so any other runtime has to say
 # what its DNS is: on Kubernetes, the kube-dns/CoreDNS service address (commonly 10.96.0.10).
 ENV RESOLVER=127.0.0.11
+# Whether nginx asks that resolver for AAAA records too. Off by default: Docker's embedded DNS
+# answers A records and an IPv6 answer nginx cannot route to only adds a failed attempt. On a
+# platform whose service network is IPv6-only (Railway's *.railway.internal names resolve to
+# AAAA records only, via [fd12::10]) set RESOLVER_IPV6=on or every /api request fails to resolve.
+ENV RESOLVER_IPV6=off
 # Empty = the CF-Connecting-IP header is dropped before it reaches the API, so it cannot be
 # forged by a direct client. Set to $http_cf_connecting_ip only when Cloudflare is really in
 # front. Defined here too, not just in compose, so the template always renders for anyone

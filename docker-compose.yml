@@ -54,6 +54,9 @@ services:
       - PORT=${PORT:-3000}
       # Docker's embedded DNS. Only ever needs changing on a runtime that is not Docker.
       - RESOLVER=${RESOLVER:-127.0.0.11}
+      # Also look up AAAA records for BACKEND. Only for a runtime whose service network is
+      # IPv6-only (Railway); under Docker the default is right.
+      - RESOLVER_IPV6=${RESOLVER_IPV6:-off}
       # Empty drops the CF-Connecting-IP header, so a direct client cannot forge the address
       # the activity log records. Cloudflare users set CF_CONNECTING_IP=$$http_cf_connecting_ip.
       - CF_CONNECTING_IP=${CF_CONNECTING_IP:-}
