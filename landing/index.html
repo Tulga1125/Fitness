@@ -71,6 +71,29 @@
       box-shadow: 0 8px 30px var(--glow);
     }
     .btn svg { width: 18px; height: 18px; }
+
+    /* A product that is not live yet: same card, dimmed, not a link, with its own logo row. */
+    .card.pending { cursor: default; opacity: .78; }
+    .card.pending:hover { transform: none; border-color: var(--line); box-shadow: none; }
+    .card .head { display: flex; align-items: center; gap: 14px; }
+    .card .mark {
+      width: 48px; height: 48px; border-radius: 12px; flex: none;
+      background: #000; border: 1px solid var(--line); display: grid; place-items: center;
+    }
+    .card .mark img { width: 30px; height: auto; }
+    .card .head .kicker { margin-bottom: 2px; }
+    .card .head h2 { margin: 0; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+      padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: .04em;
+      color: #ffd37a; background: rgba(255,184,46,.12); border: 1px solid rgba(255,184,46,.35);
+    }
+    .badge::before {
+      content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ffb82e;
+      box-shadow: 0 0 0 0 rgba(255,184,46,.6); animation: pulse 2s ease-out infinite;
+    }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,184,46,.6); } 100% { box-shadow: 0 0 0 10px rgba(255,184,46,0); } }
+    @media (prefers-reduced-motion: reduce) { .badge::before { animation: none; } }
     footer { padding: 20px 16px 28px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
     footer a { color: var(--muted); }
     @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
@@ -92,6 +115,18 @@
           Open openGym
         </span>
       </a>
+
+      <div class="card pending" aria-label="T Loan, pending">
+        <div class="head">
+          <div class="mark"><img src="logo.png" alt=""></div>
+          <div>
+            <div class="kicker">T Loan</div>
+            <h2>Coming soon</h2>
+          </div>
+        </div>
+        <p style="margin-top:12px">A place is reserved here for T Loan. Nothing to open yet.</p>
+        <span class="badge">Pending</span>
+      </div>
     </div>
   </main>
   <footer>
