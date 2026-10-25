@@ -456,15 +456,21 @@ const PUBLIC_ROUTES = new Set(['GET /api/health', 'POST /api/login', 'POST /api/
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.ico': 'image/x-icon' };
 
+// index.html доторх {{v}} → app.js+style.css-ийн агуулгын hash: хөтөч хуучин JS-ээ кэшээс хэрэглэхгүй
+const ASSET_VERSION = crypto.createHash('sha1')
+  .update(fs.readFileSync(path.join(PUBLIC_DIR, 'app.js'))).update(fs.readFileSync(path.join(PUBLIC_DIR, 'style.css')))
+  .digest('hex').slice(0, 10);
+const INDEX_HTML = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8').replaceAll('{{v}}', ASSET_VERSION);
+function serveIndex(res) {
+  res.writeHead(200, { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-cache' });
+  res.end(INDEX_HTML);
+}
 function serveStatic(req, res, pathname) {
   let p = pathname === '/' ? '/index.html' : pathname;
   const file = path.normalize(path.join(PUBLIC_DIR, p));
   if (!file.startsWith(PUBLIC_DIR)) { res.writeHead(403); return res.end(); }
-  if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
-    // SPA: бусад замыг index.html руу
-    res.writeHead(200, { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-cache' });
-    return fs.createReadStream(path.join(PUBLIC_DIR, 'index.html')).pipe(res);
-  }
+  if (p === '/index.html') return serveIndex(res);
+  if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) return serveIndex(res);  // SPA: бусад замыг index.html руу
   const ext = path.extname(file);
   // js/css/html: no-cache (CDN болон хөтөч бүр дахин шалгана, шинэ хувилбар шууд хүрнэ); зураг: 1 өдөр
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream',
