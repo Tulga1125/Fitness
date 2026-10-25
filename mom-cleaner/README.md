@@ -35,14 +35,15 @@ npm test
 | `TZ_NAME` | `Asia/Ulaanbaatar` | Огноо/цаг энэ бүсээр |
 | `ANTHROPIC_API_KEY` | — | Байвал ээжийн нүүр дээр AI тойм гарна |
 
-## Railway дээр тавих
+## Railway (одоогийн deploy)
 
-1. Railway → **New Project → Deploy from GitHub repo** → энэ repo. Service Settings → **Root Directory** = `mom-cleaner`
-   (Dockerfile-аа өөрөө олно, `railway.json` healthcheck-ийг тохируулна).
-2. **Variables**: `CLEANER_PIN`, `MOM_PIN` (4 оронтой), сонголттой `ANTHROPIC_API_KEY`.
-3. **Volumes → New Volume**, mount path `/data` — өгөгдөл redeploy хийхэд арилахгүй.
-4. **Settings → Networking → Custom Domain** → `mom.sonorgroup.mn`. Railway CNAME утга өгнө.
-5. `sonorgroup.mn`-ийн DNS дээр: `mom` → CNAME → Railway-ийн өгсөн хост (жишээ `xxxx.up.railway.app`).
-   Cloudflare ашиглаж байвал proxy-г эхэндээ унтраа (DNS only), SSL гарсны дараа асаана.
+Railway-ийн `fitness` project дотор `mom` service: энэ repo-оос (root directory `/mom-cleaner`, Dockerfile build),
+volume `/data` дээр, `CLEANER_PIN` / `MOM_PIN` / `DATA_DIR` / `TZ_NAME` variables. Public URL:
+<https://mom-production-b950.up.railway.app>, custom domain <https://mom.sonorgroup.mn>
+(Cloudflare дээр `mom` → CNAME → `u6tvt4g6.up.railway.app`, DNS only).
 
-Хэдхэн минутын дараа https://mom.sonorgroup.mn дээр нээгдэнэ. Утсан дээр «Нүүр хуудсанд нэмэх» хийвэл апп шиг ажиллана.
+- Branch руу push хийхэд Railway автоматаар дахин build хийнэ.
+- PIN солих: Railway → mom service → Variables. `ANTHROPIC_API_KEY` нэмбэл AI тойм асна.
+- Утсан дээр «Нүүр хуудсанд нэмэх» хийвэл апп шиг ажиллана.
+
+Шинээр өөр газар тавих бол: Deploy from GitHub → Root Directory `mom-cleaner` → Variables → Volume `/data` → Custom Domain → DNS CNAME.
