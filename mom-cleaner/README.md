@@ -39,8 +39,13 @@ npm test
 
 Railway-ийн `fitness` project дотор `mom` service: энэ repo-оос (root directory `/mom-cleaner`, Dockerfile build),
 volume `/data` дээр, `CLEANER_PIN` / `MOM_PIN` / `DATA_DIR` / `TZ_NAME` variables. Public URL:
-<https://mom-production-b950.up.railway.app>, custom domain <https://mom.sonorgroup.mn>
-(Cloudflare дээр `mom` → CNAME → `8rhlvlg3.up.railway.app`, DNS only).
+<https://mom-production-b950.up.railway.app>, custom domain <https://mom.sonorgroup.mn>.
+
+Custom domain одоогоор Cloudflare Worker-оор (`mom-proxy`, route `mom.sonorgroup.mn/*`) Railway-ийн service
+domain руу proxy хийгдэж байна: Cloudflare дээр `mom` → CNAME → `8rhlvlg3.up.railway.app` (proxied). Railway-ийн
+өөрийн custom-domain router энэ домэйныг таньж сертификат гаргаж чадаагүй (хэдэн цаг "validating ownership"
+гацсан); Railway дээр сертификат VALID болсон үед Worker route-ийг устгаад CNAME-ийг DNS only болгоход л
+Railway шууд үйлчилнэ.
 
 - Branch руу push хийхэд Railway автоматаар дахин build хийнэ.
 - PIN солих: Railway → mom service → Variables. `ANTHROPIC_API_KEY` нэмбэл AI тойм асна.
