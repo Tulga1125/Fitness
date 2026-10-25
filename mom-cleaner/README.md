@@ -40,7 +40,7 @@ npm test
 Railway-ийн `fitness` project дотор `mom` service: энэ repo-оос (root directory `/mom-cleaner`, Dockerfile build),
 volume `/data` дээр, `CLEANER_PIN` / `MOM_PIN` / `DATA_DIR` / `TZ_NAME` variables. Public URL:
 <https://mom-production-b950.up.railway.app>, custom domain <https://mom.sonorgroup.mn>
-(Cloudflare дээр `mom` → CNAME → `u6tvt4g6.up.railway.app`, DNS only).
+(Cloudflare дээр `mom` → CNAME → `8rhlvlg3.up.railway.app`, DNS only).
 
 - Branch руу push хийхэд Railway автоматаар дахин build хийнэ.
 - PIN солих: Railway → mom service → Variables. `ANTHROPIC_API_KEY` нэмбэл AI тойм асна.
