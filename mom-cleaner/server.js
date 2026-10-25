@@ -264,7 +264,8 @@ const routes = {
   'GET /api/health': (req, res) => json(res, 200, { ok: true }),
 
   'POST /api/login': async (req, res) => {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+    // Cloudflare Worker proxy-гоор ирвэл X-Real-IP (cf-connecting-ip), үгүй бол Railway-ийн X-Forwarded-For
+    const ip = req.headers['x-real-ip'] || req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
     if (rateLimited(ip)) return json(res, 429, { error: 'Хэт олон удаа буруу оролдлого. 15 минутын дараа дахин оролдоно уу.' });
     const { role, pin } = await readBody(req);
     if (!PINS[role] || String(pin) !== PINS[role]) { noteFail(ip); return json(res, 401, { error: 'PIN буруу байна' }); }
