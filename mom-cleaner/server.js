@@ -269,7 +269,10 @@ const routes = {
     if (rateLimited(ip)) return json(res, 429, { error: 'Хэт олон удаа буруу оролдлого. 15 минутын дараа дахин оролдоно уу.' });
     const { role, pin } = await readBody(req);
     if (!PINS[role] || String(pin) !== PINS[role]) { noteFail(ip); return json(res, 401, { error: 'PIN буруу байна' }); }
-    json(res, 200, { role }, { 'Set-Cookie': cookieHeader(makeToken(role), SESSION_DAYS * 86400, req) });
+    // Cookie + token хоёуланг нь өгнө: iOS Safari зарим үед cookie-г хаядаг тул клиент token-ийг
+    // localStorage-д хадгалж Authorization толгойгоор илгээнэ.
+    const token = makeToken(role);
+    json(res, 200, { role, token }, { 'Set-Cookie': cookieHeader(token, SESSION_DAYS * 86400, req) });
   },
   'POST /api/logout': (req, res) => json(res, 200, { ok: true }, { 'Set-Cookie': cookieHeader('', 0, req) }),
 
@@ -463,8 +466,9 @@ function serveStatic(req, res, pathname) {
     return fs.createReadStream(path.join(PUBLIC_DIR, 'index.html')).pipe(res);
   }
   const ext = path.extname(file);
+  // js/css/html: no-cache (CDN болон хөтөч бүр дахин шалгана, шинэ хувилбар шууд хүрнэ); зураг: 1 өдөр
   res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream',
-    'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600' });
+    'Cache-Control': ['.html', '.js', '.css', '.webmanifest'].includes(ext) ? 'no-cache' : 'public, max-age=86400' });
   fs.createReadStream(file).pipe(res);
 }
 
@@ -478,12 +482,16 @@ export const server = http.createServer(async (req, res) => {
       if (!handler) return json(res, 404, { error: 'not found' });
       let role = null;
       if (!PUBLIC_ROUTES.has(key)) {
-        role = readToken(cookies(req).mom_session);
-        if (!role) return json(res, 401, { error: 'Нэвтрэх шаардлагатай' });
-        if (req.method !== 'GET') {
-          // CSRF: зөвхөн ижил origin-оос (fetch нь Sec-Fetch-Site илгээдэг)
-          const sfs = req.headers['sec-fetch-site'];
-          if (sfs && sfs !== 'same-origin' && sfs !== 'none') return json(res, 403, { error: 'cross-site' });
+        const bearer = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        role = bearer ? readToken(bearer) : null;
+        if (!role) {
+          role = readToken(cookies(req).mom_session);
+          if (!role) return json(res, 401, { error: 'Нэвтрэх шаардлагатай' });
+          if (req.method !== 'GET') {
+            // CSRF (зөвхөн cookie нэвтрэлтэд): ижил origin-оос л (fetch нь Sec-Fetch-Site илгээдэг)
+            const sfs = req.headers['sec-fetch-site'];
+            if (sfs && sfs !== 'same-origin' && sfs !== 'none') return json(res, 403, { error: 'cross-site' });
+          }
         }
       }
       return await handler(req, res, role);

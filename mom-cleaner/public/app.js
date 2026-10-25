@@ -17,10 +17,16 @@ const weekday = d => { const [y, m, dd] = d.split('-').map(Number); return WD[ne
 
 function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), ms); }
 
+const TOKEN_KEY = 'mom_token';
+const getToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
+const setToken = t => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch {} };
 async function api(path, body) {
-  const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const headers = {};
+  const tok = getToken(); if (tok) headers.Authorization = 'Bearer ' + tok;   // cookie хаягдсан ч ажиллана (iOS Safari)
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const r = await fetch(path, body === undefined ? { headers } : { method: 'POST', headers, body: JSON.stringify(body) });
   let j = {}; try { j = await r.json(); } catch {}
-  if (r.status === 401 && path !== '/api/login') { S.me = null; S.data = null; render(); throw new Error('auth'); }
+  if (r.status === 401 && path !== '/api/login') { setToken(''); S.me = null; S.data = null; render(); throw new Error('auth'); }
   if (!r.ok) { toast(j.error || 'Алдаа гарлаа'); throw new Error(j.error || r.status); }
   return j;
 }
@@ -268,7 +274,7 @@ app.addEventListener('click', e => {
 });
 
 const actions = {
-  logout: async () => { await api('/api/logout', {}); S.me = null; S.data = null; S.pin = ''; render(); },
+  logout: async () => { await api('/api/logout', {}); setToken(''); S.me = null; S.data = null; S.pin = ''; render(); },
   clockin: async () => { await api('/api/clock', { action: 'in' }); toast('Амжилттай! Сайн ажиллаарай 💪'); await load(); },
   clockout: () => { S.sheet = { type: 'clockout' }; render(); },
   clockout2: async () => {
@@ -325,7 +331,7 @@ async function pinKey(k) {
   if (k === '⌫') S.pin = S.pin.slice(0, -1); else if (S.pin.length < 4) S.pin += k;
   S.err = ''; render();
   if (S.pin.length === 4) {
-    try { await api('/api/login', { role: S.role, pin: S.pin }); S.pin = ''; S.tab = S.role === 'mom' ? 'home' : 'today'; await load(); }
+    try { const r = await api('/api/login', { role: S.role, pin: S.pin }); setToken(r.token || ''); S.pin = ''; S.tab = S.role === 'mom' ? 'home' : 'today'; await load(); }
     catch (e) { S.pin = ''; S.err = e.message === '401' ? 'PIN буруу байна' : (e.message || 'Алдаа'); if (navigator.vibrate) navigator.vibrate(100); render(); }
   }
 }

@@ -119,6 +119,19 @@ test('API: нэвтрэх → ирлээ → ажил чеклэх → явла�
   assert.equal(st.payroll.paid, 10000);
   assert.equal(st.payroll.balance, out.body.visit.pay - 10000);
 
+  // Bearer token (cookie-гүй) нэвтрэлт
+  const lr = await fetch(base + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'mom', pin: '2222' }) });
+  const { token } = await lr.json();
+  assert.ok(token && token.startsWith('mom.'));
+  const br = await fetch(base + '/api/state', { headers: { Authorization: 'Bearer ' + token } });
+  assert.equal(br.status, 200);
+  assert.equal((await br.json()).role, 'mom');
+  const bad = await fetch(base + '/api/state', { headers: { Authorization: 'Bearer ' + token.slice(0, -2) + 'xx' } });
+  assert.equal(bad.status, 401);
+  // Bearer POST (Sec-Fetch-Site байхгүй ч CSRF шалгалт хамаарахгүй)
+  const bp = await fetch(base + '/api/requests', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ text: 'bearer' }) });
+  assert.equal(bp.status, 200);
+
   // гарах
   await call('c', '/api/logout', {});
   // cookie устсан (Max-Age=0) → хоосон cookie
