@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>T Agent</title>
   <meta name="description" content="T Agent is Tulga's personal agent: the tools it builds and runs for him. Fitness: a self-hosted gym and body-weight tracker, powered by openGym.">
   <meta name="theme-color" content="#000000">
@@ -17,224 +17,438 @@
   <meta name="apple-mobile-web-app-title" content="T Agent">
   <link rel="preload" as="image" href="logo.png">
   <style>
+    /* The page is a phone, in the style of the in-game phone: a black slab with a status bar, a
+       wallpaper, a grid of app tiles you move through with the arrow keys (or tap), and the
+       three key hints along the bottom. Each service is an app; Status, T Loan and About open
+       inside the phone, the rest open the service itself. */
     :root {
-      --bg: #000;
-      --fg: #f4f6fb;
-      --muted: #9aa3b5;
-      --line: rgba(255,255,255,.08);
+      --bg: #06070a;
+      --bezel: #101319;
+      --bezel-edge: #30353f;
+      --fg: #f2f4f8;
+      --muted: #8f97aa;
+      --line: rgba(255,255,255,.1);
       --blue-1: #2f3cff;
       --blue-2: #1e90ff;
       --blue-3: #22d3ff;
-      --glow: rgba(34,140,255,.35);
+      --up: #4ade80;
+      --down: #ff5c5c;
+      --pend: #ffb82e;
+      --bar-h: 30px;
+      --keys-h: 58px;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body {
       background: var(--bg);
       color: var(--fg);
-      font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+      font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-      display: flex; flex-direction: column; min-height: 100vh;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      padding: 24px 16px;
       overflow-x: hidden;
     }
     body::before {
-      content: ""; position: fixed; inset: -40vh -40vw auto -40vw; height: 120vh; z-index: -1;
+      content: ""; position: fixed; inset: 0; z-index: -1;
       background:
-        radial-gradient(60% 45% at 50% 20%, rgba(47,60,255,.28), transparent 70%),
-        radial-gradient(40% 30% at 70% 10%, rgba(34,211,255,.18), transparent 70%);
+        radial-gradient(60% 50% at 50% 0%, rgba(47,60,255,.22), transparent 70%),
+        radial-gradient(50% 40% at 85% 90%, rgba(34,211,255,.10), transparent 70%);
       pointer-events: none;
     }
-    main {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 56px 16px 40px; gap: 28px;
-    }
-    .logo { width: min(200px, 48vw); height: auto; filter: drop-shadow(0 0 40px var(--glow)); }
-    h1 { margin: 0; font-size: clamp(28px, 6vw, 44px); letter-spacing: .18em; font-weight: 700; }
-    h1 .t { background: linear-gradient(90deg, var(--blue-1), var(--blue-3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .tag { margin: 0; max-width: 34rem; color: var(--muted); font-size: clamp(16px, 2.4vw, 19px); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-    .cards { display: grid; gap: 16px; width: 100%; max-width: 460px; margin-top: 8px; }
-    .card {
-      display: block; text-decoration: none; color: inherit; text-align: left;
-      border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
-      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    /* The slab. */
+    .phone {
+      width: min(400px, 100%);
+      height: min(820px, calc(100vh - 48px)); height: min(820px, calc(100dvh - 48px));
+      min-height: 560px;
+      padding: 12px;
+      border-radius: 46px;
+      background: linear-gradient(180deg, #1b1f28, var(--bezel) 30%, #0a0c10);
+      box-shadow: 0 40px 90px rgba(0,0,0,.75), 0 0 0 1px #000, inset 0 0 0 2px var(--bezel-edge);
+      position: relative;
     }
-    .card:hover, .card:focus-visible { transform: translateY(-2px); border-color: rgba(34,211,255,.45); box-shadow: 0 10px 40px rgba(30,144,255,.18); outline: none; }
-    .card .kicker { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--blue-3); font-weight: 600; }
-    .card h2 { margin: 6px 0 4px; font-size: 20px; }
-    .card p { margin: 0; color: var(--muted); font-size: 15px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 10px; margin-top: 16px;
-      padding: 12px 20px; border-radius: 999px; font-weight: 600; font-size: 15px;
-      color: #fff; background: linear-gradient(90deg, var(--blue-1), var(--blue-2) 60%, var(--blue-3));
-      box-shadow: 0 8px 30px var(--glow);
+    .phone::before { /* earpiece */
+      content: ""; position: absolute; top: 4px; left: 50%; width: 56px; height: 4px; margin-left: -28px;
+      border-radius: 2px; background: #05060a; box-shadow: inset 0 1px 1px rgba(255,255,255,.08);
     }
-    .btn svg { width: 18px; height: 18px; }
+    .screen {
+      position: relative; height: 100%; border-radius: 34px; overflow: hidden;
+      display: flex; flex-direction: column;
+      background:
+        radial-gradient(90% 55% at 50% -5%, rgba(47,60,255,.45), transparent 70%),
+        radial-gradient(60% 40% at 90% 100%, rgba(34,211,255,.18), transparent 70%),
+        linear-gradient(180deg, #121a2b, #090c13);
+      color: var(--fg);
+    }
+    .screen::before { /* wallpaper mark */
+      content: ""; position: absolute; left: 50%; top: 66%; width: 230px; height: 200px; margin: -100px 0 0 -115px;
+      background: url(logo.png) center / contain no-repeat; opacity: .10; filter: blur(.5px);
+      pointer-events: none;
+    }
 
-    /* A product that is not live yet: same card, dimmed, not a link, with its own logo row. */
-    .card.pending { cursor: default; opacity: .78; }
-    .card.pending:hover { transform: none; border-color: var(--line); box-shadow: none; }
-    .card .head { display: flex; align-items: center; gap: 14px; }
-    .card .mark {
-      width: 48px; height: 48px; border-radius: 12px; flex: none;
-      background: #000; border: 1px solid var(--line); display: grid; place-items: center;
+    /* Status bar: signal and carrier on the left, time and battery on the right. */
+    .statusbar {
+      height: var(--bar-h); flex: none; display: flex; align-items: center; gap: 8px;
+      padding: 0 18px; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      background: rgba(0,0,0,.35); position: relative; z-index: 2;
     }
-    .card .mark img { width: 30px; height: auto; }
-    .card .head .kicker { margin-bottom: 2px; }
-    .card .head h2 { margin: 0; }
+    .signal { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; }
+    .signal i { display: block; width: 3px; background: var(--fg); border-radius: 1px; }
+    .signal i:nth-child(1) { height: 4px; } .signal i:nth-child(2) { height: 6px; }
+    .signal i:nth-child(3) { height: 8px; } .signal i:nth-child(4) { height: 11px; }
+    .carrier { text-transform: uppercase; }
+    .clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+    .battery {
+      width: 22px; height: 11px; border: 1.5px solid var(--fg); border-radius: 3px; position: relative; padding: 1.5px;
+    }
+    .battery::after { content: ""; position: absolute; right: -4px; top: 2.5px; width: 2px; height: 4px; background: var(--fg); border-radius: 0 1px 1px 0; }
+    .battery i { display: block; height: 100%; width: 100%; background: var(--up); border-radius: 1px; }
+
+    /* Screens: the home grid and the apps that open inside the phone. */
+    .body { flex: 1; position: relative; overflow: hidden; }
+    .app {
+      position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      display: none; animation: appin .18s ease-out;
+    }
+    .app.open { display: block; }
+    @keyframes appin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 10px; padding: 24px 18px 20px;
+    }
+    .tile {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: none; border: 0; padding: 4px 2px; border-radius: 18px; cursor: pointer;
+      color: var(--fg); text-decoration: none; font: inherit; -webkit-tap-highlight-color: transparent;
+    }
+    .tile:focus { outline: none; }
+    .tile .icon {
+      width: 64px; height: 64px; border-radius: 17px; display: grid; place-items: center; position: relative;
+      background: var(--tile, #3a4150);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -10px 18px rgba(0,0,0,.22), 0 8px 16px rgba(0,0,0,.45);
+      transition: transform .12s ease;
+    }
+    .tile .icon svg { width: 36px; height: 36px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+    .tile .icon svg .f { fill: #fff; stroke: none; }
+    .tile .label { font-size: 12.5px; letter-spacing: .01em; text-shadow: 0 1px 3px rgba(0,0,0,.9); white-space: nowrap; }
+    .tile.sel .icon { outline: 3px solid #fff; outline-offset: 3px; transform: translateY(-2px); box-shadow: 0 0 0 1px #000, 0 10px 24px rgba(0,0,0,.6), 0 0 24px rgba(255,255,255,.25); }
+    .tile.sel .label { font-weight: 700; }
+    .tile:active .icon { transform: scale(.94); }
+    .tile.pending .icon { filter: saturate(.55) brightness(.8); }
+    .tile.pending .label { color: var(--muted); }
     .badge {
-      display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
-      padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: .04em;
+      position: absolute; top: -7px; right: -7px; min-width: 21px; height: 21px; padding: 0 6px;
+      border-radius: 11px; background: #e5484d; color: #fff; font-size: 11.5px; font-weight: 700; line-height: 21px;
+      text-align: center; border: 2px solid #0d1119; display: none;
+    }
+    .badge.on { display: block; }
+    .badge.ok { background: #2a9d5c; }
+    .badge.soon { background: #8a6a1c; color: #ffe2a8; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; }
+
+    /* In-phone apps share a title bar, like the Contacts and Messages apps. */
+    .bar {
+      position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      background: rgba(6,8,14,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .bar .right { margin-left: auto; font-weight: 600; letter-spacing: .02em; text-transform: none; font-size: 13px; color: var(--muted); }
+    .bar .right.up { color: var(--up); } .bar .right.down { color: var(--down); }
+    .bar button {
+      font: inherit; color: var(--fg); background: rgba(255,255,255,.08); border: 1px solid var(--line);
+      border-radius: 999px; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; padding: 0;
+    }
+    .bar button:disabled { opacity: .45; cursor: default; }
+    .bar button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .page { padding: 18px 18px 24px; }
+    .page p { margin: 0 0 12px; color: #d5dae6; }
+    .page a { color: var(--blue-3); }
+    .page .hero { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .page .hero img { width: 54px; height: auto; filter: drop-shadow(0 0 16px rgba(34,140,255,.5)); }
+    .page .hero h1 { margin: 0; font-size: 20px; letter-spacing: .16em; }
+    .page .hero h1 .t { background: linear-gradient(90deg, var(--blue-1), var(--blue-3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
       color: #ffd37a; background: rgba(255,184,46,.12); border: 1px solid rgba(255,184,46,.35);
     }
-    .badge::before {
-      content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ffb82e;
-      box-shadow: 0 0 0 0 rgba(255,184,46,.6); animation: pulse 2s ease-out infinite;
-    }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,184,46,.6); } 100% { box-shadow: 0 0 0 10px rgba(255,184,46,0); } }
-    @media (prefers-reduced-motion: reduce) { .badge::before { animation: none; } }
-    /* Status: one row per live service, filled in by the script at the end of the page. */
-    .status { width: 100%; max-width: 460px; text-align: left; margin-top: 8px; }
-    .status-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 4px 10px; }
-    .status-head h2 { margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--blue-3); font-weight: 600; }
-    .status-sum { font-size: 13px; color: var(--muted); }
-    .status-sum.up { color: #4ade80; }
-    .status-sum.down { color: #ff6b6b; }
-    .status-list { list-style: none; margin: 0; padding: 4px 0; border: 1px solid var(--line); border-radius: 18px;
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)); }
-    .status-list li { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; column-gap: 12px; padding: 11px 18px; }
-    .status-list li + li { border-top: 1px solid var(--line); }
-    .status-list .group { display: block; padding: 10px 18px 2px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-    .status-list .group + li { border-top: 0; }
+    .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pend); }
+
+    /* The Status app: a contacts-style list, one row per service. */
+    .status-list { list-style: none; margin: 0; padding: 0 0 12px; }
+    .status-list .group { padding: 14px 18px 4px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .status-list li[data-state] { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; column-gap: 12px; padding: 11px 18px; }
+    .status-list li[data-state] + li[data-state] { border-top: 1px solid var(--line); margin-left: 0; }
+    .status-list .dot { grid-column: 1; grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; background: #4b5563; }
     .status-list .name { grid-column: 2; grid-row: 1; min-width: 0; font-size: 15px; font-weight: 600; }
     .status-list .name a { color: inherit; text-decoration: none; }
-    .status-list .name a:hover { text-decoration: underline; }
     .status-list .host { grid-column: 2; grid-row: 2; font-size: 12px; color: var(--muted); }
     .status-list .result { grid-column: 3; grid-row: 1 / span 2; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
-    .status-list .dot { grid-column: 1; grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; background: #4b5563; }
     li[data-state="checking"] .dot { background: var(--blue-2); animation: blink 1s ease-in-out infinite alternate; }
-    li[data-state="up"] .dot { background: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,.6); }
-    li[data-state="up"] .result { color: #4ade80; }
-    li[data-state="down"] .dot { background: #ff6b6b; box-shadow: 0 0 10px rgba(255,107,107,.6); }
-    li[data-state="down"] .result { color: #ff6b6b; }
-    li[data-state="pending"] .dot { background: #ffb82e; }
+    li[data-state="up"] .dot { background: var(--up); box-shadow: 0 0 10px rgba(74,222,128,.6); }
+    li[data-state="up"] .result { color: var(--up); }
+    li[data-state="down"] .dot { background: var(--down); box-shadow: 0 0 10px rgba(255,92,92,.6); }
+    li[data-state="down"] .result { color: var(--down); }
+    li[data-state="pending"] .dot { background: var(--pend); }
     li[data-state="pending"] .result { color: #ffd37a; }
     @keyframes blink { from { opacity: .35; } to { opacity: 1; } }
-    .status-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 4px 0; font-size: 13px; color: var(--muted); }
-    .status-foot button { font: inherit; color: var(--fg); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-    .status-foot button:hover, .status-foot button:focus-visible { border-color: rgba(34,211,255,.45); outline: none; }
-    .status-foot button:disabled { opacity: .5; cursor: default; }
-    @media (prefers-reduced-motion: reduce) { li[data-state="checking"] .dot { animation: none; } }
-    footer { padding: 20px 16px 28px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
-    footer a { color: var(--muted); }
-    @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+    .status-foot { padding: 6px 18px 0; font-size: 12px; color: var(--muted); }
+
+    /* Key hints along the bottom, as the phone shows which button does what. */
+    .keys {
+      height: var(--keys-h); flex: none; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px; background: rgba(0,0,0,.45); border-top: 1px solid var(--line); position: relative; z-index: 2;
+    }
+    .key {
+      display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      color: var(--fg); background: none; border: 0; padding: 6px 8px; border-radius: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    .key:hover, .key:focus-visible { background: rgba(255,255,255,.08); outline: none; }
+    .key .cap {
+      width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+      background: linear-gradient(180deg, #3a3f4b, #1d2129); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 2px 4px rgba(0,0,0,.6);
+    }
+    .key .cap svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    .key .cap.dot::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #fff; }
+    .key.hint { cursor: default; } .key.hint:hover { background: none; }
+
+    .credit { margin: 0; font-size: 12.5px; color: var(--muted); text-align: center; max-width: 400px; }
+    .credit a { color: var(--muted); }
+
+    /* On a real phone the page is the phone: no slab, the screen fills the viewport. */
+    @media (max-width: 480px), (max-height: 600px) {
+      body { padding: 0; gap: 0; justify-content: stretch; }
+      .phone { width: 100%; height: 100vh; height: 100dvh; min-height: 0; padding: 0; border-radius: 0; box-shadow: none; background: none; }
+      .phone::before { display: none; }
+      .screen { border-radius: 0; }
+      .statusbar { height: calc(var(--bar-h) + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); }
+      .keys { height: calc(var(--keys-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
+      .credit { display: none; }
+      .grid { padding-top: 28px; gap: 24px 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .app { animation: none; } .tile .icon { transition: none; } li[data-state="checking"] .dot { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <img class="logo" src="logo.png" alt="T Agent logo: a blue gradient letter T">
-    <h1><span class="t">T</span> AGENT</h1>
-    <p class="tag">Tulga's personal agent. The tools it builds and runs for him live here: no ads, no subscriptions, the data stays his.</p>
+  <h1 class="sr-only">T Agent: Tulga's personal agent and the tools it runs</h1>
 
-    <div class="cards">
-      <a class="card" href="https://fitness.tagent.space/">
-        <div class="kicker">Fitness</div>
-        <h2>Gym &amp; body-weight tracker</h2>
-        <p>Plan your week, run guided workouts, log every set and your weight. Installs on your phone and signs you in with a passkey.</p>
-        <span class="btn" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 5v14M3 8v8M21 8v8M6 12h12"/></svg>
-          Open openGym
-        </span>
-      </a>
+  <div class="phone">
+    <div class="screen" role="application" aria-label="T Agent phone">
+      <div class="statusbar" aria-hidden="true">
+        <span class="signal"><i></i><i></i><i></i><i></i></span>
+        <span class="carrier">T Agent</span>
+        <span class="clock" id="clock">--:--</span>
+        <span class="battery"><i></i></span>
+      </div>
 
-      <div class="card pending" aria-label="T Loan, pending">
-        <div class="head">
-          <div class="mark"><img src="logo.png" alt=""></div>
-          <div>
-            <div class="kicker">T Loan</div>
-            <h2>Lend to friends, get paid back</h2>
+      <div class="body">
+        <!-- Home: one tile per service. data-app opens inside the phone, href opens the service. -->
+        <section class="app open" id="home" aria-label="Apps">
+          <nav class="grid" id="grid">
+            <a class="tile" href="https://fitness.tagent.space/" style="--tile: linear-gradient(160deg, var(--blue-1), var(--blue-3))">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 8v8M21 8v8M6 12h12"/></svg></span>
+              <span class="label">Fitness</span>
+            </a>
+            <a class="tile" href="https://project1.tagent.space/" style="--tile: linear-gradient(160deg, #1f9d55, #7ee787)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6M12 2v3"/></svg></span>
+              <span class="label">Nomadex</span>
+            </a>
+            <button class="tile pending" type="button" data-app="loan" style="--tile: linear-gradient(160deg, #b07a1f, #ffd36b)">
+              <span class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg>
+                <span class="badge soon on">Soon</span>
+              </span>
+              <span class="label">T Loan</span>
+            </button>
+            <button class="tile" type="button" data-app="status" id="status-tile" style="--tile: linear-gradient(160deg, #3b4252, #1c2029)">
+              <span class="icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+                <span class="badge" id="status-badge"></span>
+              </span>
+              <span class="label">Status</span>
+            </button>
+            <a class="tile" href="https://22.sonorgroup.mn/" style="--tile: linear-gradient(160deg, #c2410c, #fb923c)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 3.5a5 5 0 0 0-6.4 6.4L3 15l6 6 5.1-5.1a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3z"/></svg></span>
+              <span class="label">Sonor Parts</span>
+            </a>
+            <a class="tile" href="https://mining.sonorgroup.mn/" style="--tile: linear-gradient(160deg, #7c4a1e, #d9a066)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21l9-9M12 12l3-3M8 5c3-1.5 7-1 10 2M19 7c1.5 3 2 7 0 10"/></svg></span>
+              <span class="label">Mining</span>
+            </a>
+            <a class="tile" href="https://status.railway.com/" rel="noopener" style="--tile: linear-gradient(160deg, #5b3ecf, #a78bfa)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 10h14M9 21l1.5-4M15 21l-1.5-4M9 14h.01M15 14h.01"/></svg></span>
+              <span class="label">Railway</span>
+            </a>
+            <a class="tile" href="https://github.com/DuarteSantos8/openGym" rel="noopener" style="--tile: linear-gradient(160deg, #2b313d, #0f1218)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg></span>
+              <span class="label">openGym</span>
+            </a>
+            <button class="tile" type="button" data-app="about" style="--tile: linear-gradient(160deg, #4b5563, #2a303b)">
+              <span class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle class="f" cx="12" cy="8" r="1.1"/></svg></span>
+              <span class="label">About</span>
+            </button>
+          </nav>
+        </section>
+
+        <!-- Status: the live checklist. Each row asks this origin for /status/<name>; nginx proxies
+             that to the service's health URL (see nginx.conf) and passes the response code back. -->
+        <section class="app" id="status" aria-label="Status" hidden>
+          <div class="bar">
+            <span>Status</span>
+            <span class="right" id="status-sum" aria-live="polite">Checking&hellip;</span>
+            <button type="button" id="status-again" title="Check again" aria-label="Check again">
+              <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>
+            </button>
           </div>
-        </div>
-        <p style="margin-top:12px">A personal agent for the money friends borrow from you: it records each loan, keeps track of who owes what, and sends them the invoice when it is time to pay you back. Not open yet.</p>
-        <span class="badge">Pending</span>
+          <ul class="status-list" id="status-list">
+            <li class="group" aria-hidden="true">T Agent</li>
+            <li data-check="fitness" data-state="checking">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name"><a href="https://fitness.tagent.space/">Fitness</a></span>
+              <span class="result">&hellip;</span>
+              <span class="host">fitness.tagent.space &middot; app and api, storage writable</span>
+            </li>
+            <li data-check="nomadex" data-state="checking">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name"><a href="https://project1.tagent.space/">Nomadex</a></span>
+              <span class="result">&hellip;</span>
+              <span class="host">project1.tagent.space &middot; race control and api</span>
+            </li>
+            <li data-state="pending">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name">T Loan</span>
+              <span class="result">not deployed</span>
+              <span class="host">no address yet</span>
+            </li>
+            <li class="group" aria-hidden="true">Sonor Group</li>
+            <li data-check="sonor-parts" data-state="checking">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name"><a href="https://22.sonorgroup.mn/">Сонор Авто Сэлбэгийн Зах</a></span>
+              <span class="result">&hellip;</span>
+              <span class="host">22.sonorgroup.mn &middot; auto parts market, app and api</span>
+            </li>
+            <li data-check="sonor-mining" data-state="checking">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name"><a href="https://mining.sonorgroup.mn/">Цагаан Чулуут</a></span>
+              <span class="result">&hellip;</span>
+              <span class="host">mining.sonorgroup.mn &middot; mine survey, sign-in page</span>
+            </li>
+            <li class="group" aria-hidden="true">Platform</li>
+            <li data-check="railway" data-state="checking">
+              <span class="dot" aria-hidden="true"></span>
+              <span class="name"><a href="https://status.railway.com/" rel="noopener">Railway</a></span>
+              <span class="result">&hellip;</span>
+              <span class="host">hosts all of the above &middot; platform status from Railway's API</span>
+            </li>
+          </ul>
+          <p class="status-foot" id="status-at">Checked from this page when it loads.</p>
+        </section>
+
+        <section class="app" id="loan" aria-label="T Loan" hidden>
+          <div class="bar"><span>T Loan</span></div>
+          <div class="page">
+            <p><strong>Lend to friends, get paid back.</strong></p>
+            <p>A personal agent for the money friends borrow from you: it records each loan, keeps track of who owes what, and sends them the invoice when it is time to pay you back.</p>
+            <span class="pill">Not open yet</span>
+          </div>
+        </section>
+
+        <section class="app" id="about" aria-label="About" hidden>
+          <div class="bar"><span>About</span></div>
+          <div class="page">
+            <div class="hero">
+              <img src="logo.png" alt="T Agent logo: a blue gradient letter T">
+              <h1 aria-hidden="true"><span class="t">T</span> AGENT</h1>
+            </div>
+            <p>Tulga's personal agent. The tools it builds and runs for him live here: no ads, no subscriptions, the data stays his.</p>
+            <p><strong>Fitness</strong> is a gym and body-weight tracker: plan your week, run guided workouts, log every set and your weight. It installs on your phone and signs you in with a passkey. Built on <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> (AGPL-3.0).</p>
+            <p><strong>Nomadex</strong> is live horse race tracking: every horse on the course as the race runs, with positions, speed and results as they happen.</p>
+            <p>Move with the arrow keys, open with Enter, go back with Escape. Or just tap.</p>
+          </div>
+        </section>
       </div>
 
-      <a class="card" href="https://project1.tagent.space/">
-        <div class="kicker">Nomadex</div>
-        <h2>Live horse race tracking</h2>
-        <p>Live horse race tracking solutions: follow every horse on the course as the race runs, with positions, speed and results as they happen.</p>
-        <span class="btn" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          Open Nomadex
-        </span>
-      </a>
+      <div class="keys">
+        <button class="key" type="button" id="key-back"><span class="cap"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></span>Back</button>
+        <button class="key" type="button" id="key-select"><span class="cap dot"></span>Select</button>
+        <span class="key hint" aria-hidden="true"><span class="cap"><svg viewBox="0 0 24 24"><path d="M12 4v16M7 9l5-5 5 5M7 15l5 5 5-5"/></svg></span>Move</span>
+      </div>
     </div>
+  </div>
+  <p class="credit">T Agent &middot; Tulga's agent. Fitness is built on <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> (AGPL-3.0).</p>
 
-    <section class="status" aria-labelledby="status-h">
-      <div class="status-head">
-        <h2 id="status-h">Status</h2>
-        <span class="status-sum" id="status-sum" aria-live="polite">Checking&hellip;</span>
-      </div>
-      <ul class="status-list" id="status-list">
-        <li class="group" aria-hidden="true">T Agent</li>
-        <li data-check="fitness" data-state="checking">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name"><a href="https://fitness.tagent.space/">Fitness</a></span>
-          <span class="result">&hellip;</span>
-          <span class="host">fitness.tagent.space &middot; app and api, storage writable</span>
-        </li>
-        <li data-check="nomadex" data-state="checking">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name"><a href="https://project1.tagent.space/">Nomadex</a></span>
-          <span class="result">&hellip;</span>
-          <span class="host">project1.tagent.space &middot; race control and api</span>
-        </li>
-        <li data-state="pending">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name">T Loan</span>
-          <span class="result">not deployed</span>
-          <span class="host">no address yet</span>
-        </li>
-        <li class="group" aria-hidden="true">Sonor Group</li>
-        <li data-check="sonor-parts" data-state="checking">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name"><a href="https://22.sonorgroup.mn/">Сонор Авто Сэлбэгийн Зах</a></span>
-          <span class="result">&hellip;</span>
-          <span class="host">22.sonorgroup.mn &middot; auto parts market, app and api</span>
-        </li>
-        <li data-check="sonor-mining" data-state="checking">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name"><a href="https://mining.sonorgroup.mn/">Цагаан Чулуут</a></span>
-          <span class="result">&hellip;</span>
-          <span class="host">mining.sonorgroup.mn &middot; mine survey, sign-in page</span>
-        </li>
-        <li class="group" aria-hidden="true">Platform</li>
-        <li data-check="railway" data-state="checking">
-          <span class="dot" aria-hidden="true"></span>
-          <span class="name"><a href="https://status.railway.com/" rel="noopener">Railway</a></span>
-          <span class="result">&hellip;</span>
-          <span class="host">hosts all of the above &middot; platform status from Railway's API</span>
-        </li>
-      </ul>
-      <p class="status-foot">
-        <span id="status-at">Checked from this page when it loads.</span>
-        <button type="button" id="status-again">Check again</button>
-      </p>
-    </section>
-  </main>
-  <footer>
-    T Agent &middot; Tulga's agent. Fitness is built on <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> (AGPL-3.0).
-  </footer>
 <script>
-  // Each row asks this origin for /status/<name>; nginx proxies that to the service's health URL
-  // (see nginx.conf) and passes the response code back, so "up" means the service answered 2xx
-  // within the timeouts, and "down" means it did not. Railway's row reads its API's isStable flag.
   (function () {
+    var $ = function (id) { return document.getElementById(id); };
+
+    // Clock in the status bar.
+    var clock = $('clock');
+    function tick() {
+      var d = new Date();
+      clock.textContent = (d.getHours() < 10 ? '0' : '') + d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    }
+    tick(); setInterval(tick, 15000);
+
+    // Navigation: a highlighted tile on the home grid, apps that open over it, and the keys.
+    var tiles = Array.prototype.slice.call(document.querySelectorAll('#grid .tile'));
+    var apps = Array.prototype.slice.call(document.querySelectorAll('.app'));
+    var home = $('home');
+    var current = home;
+    var sel = 0;
+    var COLS = 3;
+
+    function select(i, focus) {
+      sel = (i + tiles.length) % tiles.length;
+      tiles.forEach(function (t, j) { t.classList.toggle('sel', j === sel); t.tabIndex = j === sel ? 0 : -1; });
+      if (focus) tiles[sel].focus({ preventScroll: true });
+    }
+    function show(app) {
+      apps.forEach(function (a) { a.classList.toggle('open', a === app); a.hidden = a !== app; });
+      current = app;
+      if (app === home) select(sel, true);
+      else { var first = app.querySelector('button, a'); if (first) first.focus({ preventScroll: true }); }
+      if (app.id === 'status' && !checked) run();
+    }
+    function open(tile) {
+      var id = tile.getAttribute('data-app');
+      if (id) show($(id)); else window.location.href = tile.href;
+    }
+    function back() { if (current !== home) show(home); }
+
+    tiles.forEach(function (t, i) {
+      t.addEventListener('focus', function () { if (i !== sel) select(i, false); });
+      t.addEventListener('mouseenter', function () { select(i, false); });
+      t.addEventListener('click', function (e) { if (t.hasAttribute('data-app')) { e.preventDefault(); select(i, false); open(t); } });
+    });
+    $('key-back').addEventListener('click', back);
+    $('key-select').addEventListener('click', function () { if (current === home) open(tiles[sel]); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
+      if (e.key === 'Escape' || e.key === 'Backspace') { if (current !== home) { e.preventDefault(); back(); } return; }
+      if (current !== home) return;
+      var next = -1;
+      if (e.key === 'ArrowRight') next = sel + 1;
+      else if (e.key === 'ArrowLeft') next = sel - 1;
+      else if (e.key === 'ArrowDown') next = sel + COLS;
+      else if (e.key === 'ArrowUp') next = sel - COLS;
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(tiles[sel]); return; }
+      if (next < 0) return;
+      e.preventDefault();
+      select(next, true);
+    });
+    select(0, false);
+
+    // Status checks. "up" means the service answered 2xx within nginx's timeouts; Railway's row
+    // reads its API's isStable flag. The Status tile wears the count of services that are down.
     var rows = Array.prototype.slice.call(document.querySelectorAll('[data-check]'));
-    var sum = document.getElementById('status-sum');
-    var at = document.getElementById('status-at');
-    var again = document.getElementById('status-again');
+    var sum = $('status-sum'), at = $('status-at'), again = $('status-again'), badge = $('status-badge');
+    var checked = false;
 
     function fetchWithTimeout(url, ms) {
       var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
@@ -242,13 +456,12 @@
       return fetch(url, { cache: 'no-store', credentials: 'omit', signal: ctrl ? ctrl.signal : undefined })
         .then(function (r) { clearTimeout(timer); return r; }, function (e) { clearTimeout(timer); throw e; });
     }
-
     function check(li) {
       var id = li.getAttribute('data-check');
       var out = li.querySelector('.result');
       var start = Date.now();
       li.setAttribute('data-state', 'checking');
-      out.textContent = '\u2026';
+      out.textContent = '…';
       return fetchWithTimeout('/status/' + id, 15000).then(function (r) {
         if (id === 'railway') {
           return r.json().then(function (j) {
@@ -261,24 +474,26 @@
         return { ok: false, note: 'no answer' };
       }).then(function (res) {
         li.setAttribute('data-state', res.ok ? 'up' : 'down');
-        out.textContent = (res.ok ? 'up \u00b7 ' : 'down \u00b7 ') + res.note;
+        out.textContent = (res.ok ? 'up · ' : 'down · ') + res.note;
         return res.ok;
       });
     }
-
     function run() {
+      checked = true;
       again.disabled = true;
-      sum.className = 'status-sum';
-      sum.textContent = 'Checking\u2026';
+      sum.className = 'right';
+      sum.textContent = 'Checking…';
+      badge.className = 'badge';
       Promise.all(rows.map(check)).then(function (oks) {
         var down = oks.filter(function (ok) { return !ok; }).length;
-        sum.className = 'status-sum ' + (down ? 'down' : 'up');
+        sum.className = 'right ' + (down ? 'down' : 'up');
         sum.textContent = down ? down + ' of ' + oks.length + ' down' : 'All ' + oks.length + ' live';
+        badge.textContent = down ? String(down) : '✓';
+        badge.className = 'badge on' + (down ? '' : ' ok');
         at.textContent = 'Checked ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' from this page.';
         again.disabled = false;
       });
     }
-
     again.addEventListener('click', run);
     run();
   })();

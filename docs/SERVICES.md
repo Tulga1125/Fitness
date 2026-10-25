@@ -1,12 +1,13 @@
 # Live services checklist
 
 Everything that runs on Railway under `tagent.space` and `sonorgroup.mn`, what each one is, and
-how to confirm it is up. The same list is live on the landing page: the **Status** section at
-<https://tagent.space> checks every row when the page loads and on *Check again*. From a terminal,
+how to confirm it is up. The same list is live on the landing page: the **Status** app on the
+phone at <https://tagent.space> checks every row when the page loads and on its refresh button,
+and the Status tile wears a badge with the count of services that are down. From a terminal,
 `sh scripts/check-services.sh` prints the checklist with live results and exits non-zero when
 anything fails.
 
-## How the Status section works
+## How the Status app works
 
 The landing nginx (`landing/nginx.conf`) proxies one path per service, so the page reads each
 answer from its own origin and gets the real response code; not every service sends CORS headers,
