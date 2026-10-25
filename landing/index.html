@@ -94,6 +94,38 @@
     }
     @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,184,46,.6); } 100% { box-shadow: 0 0 0 10px rgba(255,184,46,0); } }
     @media (prefers-reduced-motion: reduce) { .badge::before { animation: none; } }
+    /* Status: one row per live service, filled in by the script at the end of the page. */
+    .status { width: 100%; max-width: 460px; text-align: left; margin-top: 8px; }
+    .status-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 4px 10px; }
+    .status-head h2 { margin: 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--blue-3); font-weight: 600; }
+    .status-sum { font-size: 13px; color: var(--muted); }
+    .status-sum.up { color: #4ade80; }
+    .status-sum.down { color: #ff6b6b; }
+    .status-list { list-style: none; margin: 0; padding: 4px 0; border: 1px solid var(--line); border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)); }
+    .status-list li { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; column-gap: 12px; padding: 11px 18px; }
+    .status-list li + li { border-top: 1px solid var(--line); }
+    .status-list .group { display: block; padding: 10px 18px 2px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .status-list .group + li { border-top: 0; }
+    .status-list .name { grid-column: 2; grid-row: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+    .status-list .name a { color: inherit; text-decoration: none; }
+    .status-list .name a:hover { text-decoration: underline; }
+    .status-list .host { grid-column: 2; grid-row: 2; font-size: 12px; color: var(--muted); }
+    .status-list .result { grid-column: 3; grid-row: 1 / span 2; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+    .status-list .dot { grid-column: 1; grid-row: 1 / span 2; width: 10px; height: 10px; border-radius: 50%; background: #4b5563; }
+    li[data-state="checking"] .dot { background: var(--blue-2); animation: blink 1s ease-in-out infinite alternate; }
+    li[data-state="up"] .dot { background: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,.6); }
+    li[data-state="up"] .result { color: #4ade80; }
+    li[data-state="down"] .dot { background: #ff6b6b; box-shadow: 0 0 10px rgba(255,107,107,.6); }
+    li[data-state="down"] .result { color: #ff6b6b; }
+    li[data-state="pending"] .dot { background: #ffb82e; }
+    li[data-state="pending"] .result { color: #ffd37a; }
+    @keyframes blink { from { opacity: .35; } to { opacity: 1; } }
+    .status-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 4px 0; font-size: 13px; color: var(--muted); }
+    .status-foot button { font: inherit; color: var(--fg); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .status-foot button:hover, .status-foot button:focus-visible { border-color: rgba(34,211,255,.45); outline: none; }
+    .status-foot button:disabled { opacity: .5; cursor: default; }
+    @media (prefers-reduced-motion: reduce) { li[data-state="checking"] .dot { animation: none; } }
     footer { padding: 20px 16px 28px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); }
     footer a { color: var(--muted); }
     @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
@@ -138,9 +170,118 @@
         </span>
       </a>
     </div>
+
+    <section class="status" aria-labelledby="status-h">
+      <div class="status-head">
+        <h2 id="status-h">Status</h2>
+        <span class="status-sum" id="status-sum" aria-live="polite">Checking&hellip;</span>
+      </div>
+      <ul class="status-list" id="status-list">
+        <li class="group" aria-hidden="true">T Agent</li>
+        <li data-check="fitness" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name"><a href="https://fitness.tagent.space/">Fitness</a></span>
+          <span class="result">&hellip;</span>
+          <span class="host">fitness.tagent.space &middot; app and api, storage writable</span>
+        </li>
+        <li data-check="nomadex" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name"><a href="https://project1.tagent.space/">Nomadex</a></span>
+          <span class="result">&hellip;</span>
+          <span class="host">project1.tagent.space &middot; race control and api</span>
+        </li>
+        <li data-state="pending">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name">T Loan</span>
+          <span class="result">not deployed</span>
+          <span class="host">no address yet</span>
+        </li>
+        <li class="group" aria-hidden="true">Sonor Group</li>
+        <li data-check="sonor-parts" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name"><a href="https://22.sonorgroup.mn/">Сонор Авто Сэлбэгийн Зах</a></span>
+          <span class="result">&hellip;</span>
+          <span class="host">22.sonorgroup.mn &middot; auto parts market, app and api</span>
+        </li>
+        <li data-check="sonor-mining" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name"><a href="https://mining.sonorgroup.mn/">Цагаан Чулуут</a></span>
+          <span class="result">&hellip;</span>
+          <span class="host">mining.sonorgroup.mn &middot; mine survey, sign-in page</span>
+        </li>
+        <li class="group" aria-hidden="true">Platform</li>
+        <li data-check="railway" data-state="checking">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="name"><a href="https://status.railway.com/" rel="noopener">Railway</a></span>
+          <span class="result">&hellip;</span>
+          <span class="host">hosts all of the above &middot; platform status from Railway's API</span>
+        </li>
+      </ul>
+      <p class="status-foot">
+        <span id="status-at">Checked from this page when it loads.</span>
+        <button type="button" id="status-again">Check again</button>
+      </p>
+    </section>
   </main>
   <footer>
     T Agent &middot; Tulga's agent. Fitness is built on <a href="https://github.com/DuarteSantos8/openGym" rel="noopener">openGym</a> (AGPL-3.0).
   </footer>
+<script>
+  // Each row asks this origin for /status/<name>; nginx proxies that to the service's health URL
+  // (see nginx.conf) and passes the response code back, so "up" means the service answered 2xx
+  // within the timeouts, and "down" means it did not. Railway's row reads its API's isStable flag.
+  (function () {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('[data-check]'));
+    var sum = document.getElementById('status-sum');
+    var at = document.getElementById('status-at');
+    var again = document.getElementById('status-again');
+
+    function fetchWithTimeout(url, ms) {
+      var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+      var timer = ctrl && setTimeout(function () { ctrl.abort(); }, ms);
+      return fetch(url, { cache: 'no-store', credentials: 'omit', signal: ctrl ? ctrl.signal : undefined })
+        .then(function (r) { clearTimeout(timer); return r; }, function (e) { clearTimeout(timer); throw e; });
+    }
+
+    function check(li) {
+      var id = li.getAttribute('data-check');
+      var out = li.querySelector('.result');
+      var start = Date.now();
+      li.setAttribute('data-state', 'checking');
+      out.textContent = '\u2026';
+      return fetchWithTimeout('/status/' + id, 15000).then(function (r) {
+        if (id === 'railway') {
+          return r.json().then(function (j) {
+            var stable = !!(j && j.data && j.data.platformStatus && j.data.platformStatus.isStable);
+            return { ok: stable, note: stable ? 'stable' : 'incident' };
+          }, function () { return { ok: false, note: 'HTTP ' + r.status }; });
+        }
+        return { ok: r.ok, note: r.ok ? (Date.now() - start) + ' ms' : 'HTTP ' + r.status };
+      }, function () {
+        return { ok: false, note: 'no answer' };
+      }).then(function (res) {
+        li.setAttribute('data-state', res.ok ? 'up' : 'down');
+        out.textContent = (res.ok ? 'up \u00b7 ' : 'down \u00b7 ') + res.note;
+        return res.ok;
+      });
+    }
+
+    function run() {
+      again.disabled = true;
+      sum.className = 'status-sum';
+      sum.textContent = 'Checking\u2026';
+      Promise.all(rows.map(check)).then(function (oks) {
+        var down = oks.filter(function (ok) { return !ok; }).length;
+        sum.className = 'status-sum ' + (down ? 'down' : 'up');
+        sum.textContent = down ? down + ' of ' + oks.length + ' down' : 'All ' + oks.length + ' live';
+        at.textContent = 'Checked ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' from this page.';
+        again.disabled = false;
+      });
+    }
+
+    again.addEventListener('click', run);
+    run();
+  })();
+</script>
 </body>
 </html>

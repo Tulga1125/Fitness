@@ -1,8 +1,31 @@
 # Live services checklist
 
 Everything that runs on Railway under `tagent.space` and `sonorgroup.mn`, what each one is, and
-how to confirm it is up. Re-run the whole list with `sh scripts/check-services.sh`; it prints the
-same checklist with live results and exits non-zero when anything fails.
+how to confirm it is up. The same list is live on the landing page: the **Status** section at
+<https://tagent.space> checks every row when the page loads and on *Check again*. From a terminal,
+`sh scripts/check-services.sh` prints the checklist with live results and exits non-zero when
+anything fails.
+
+## How the Status section works
+
+The landing nginx (`landing/nginx.conf`) proxies one path per service, so the page reads each
+answer from its own origin and gets the real response code; not every service sends CORS headers,
+and Railway's API only allows `railway.com`:
+
+| Path on tagent.space | Proxies to | Up when |
+|---|---|---|
+| `/status/fitness` | `https://fitness.tagent.space/api/health` | 2xx |
+| `/status/nomadex` | `https://project1.tagent.space/api/health` | 2xx |
+| `/status/sonor-parts` | `https://22.sonorgroup.mn/api/health` | 2xx |
+| `/status/sonor-mining` | `https://mining.sonorgroup.mn/login` | 2xx (the sign-in page is the check) |
+| `/status/railway` | `POST https://backboard.railway.app/graphql/v2` `{ platformStatus { isStable } }` | `isStable` is `true` |
+
+Timeouts are 5 s to connect and 8 s to answer; a service that misses them shows as down with the
+502 or 504 nginx returns. Hostnames are resolved per request through `1.1.1.1`, the upstream
+calls use HTTP/1.1 (Cloudflare refuses nginx's default HTTP/1.0 with a 426), and every status
+answer is sent with `Cache-Control: no-store` so Cloudflare never serves a stale one. Adding a
+service means one `location` line in `nginx.conf`, one `<li data-check="name">` on the page, and
+a row below.
 
 Snapshot below: 2026-10-25 07:35 UTC. All checks passed.
 
