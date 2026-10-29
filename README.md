@@ -60,7 +60,8 @@ on your phone, synced across your devices, behind your own passkey login.
 >
 > **Live instance: <https://fitness.tagent.space>**, deployed on Railway (project `fitness`, three services
 > built from this repo on every push) behind Cloudflare (proxied CNAMEs, SSL mode *Full*). The landing
-> page at <https://tagent.space> lives in [`landing/`](landing/).
+> page at <https://tagent.space> lives in [`landing/`](landing/). [`docs/SERVICES.md`](docs/SERVICES.md)
+> lists every live service and `scripts/check-services.sh` probes them all.
 >
 > | Service | Build | Settings that differ from the compose stack |
 > |---|---|---|
