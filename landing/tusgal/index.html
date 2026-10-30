@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Тусгал — private preview.">
+<title>Тусгал</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block">
+<style>
+/* Layout: a ledger page. One column, a sticky stage bar that fills as the visitor completes the four steps, a mirror-line motif under headings. */
+:root{
+  --bg:#EDF0F3; --card:#FFFFFF; --ink:#0E1A2B; --muted:#5A6878; --line:#D5DBE2; --line2:#B9C2CC;
+  --accent:#0F7B6C; --accent-ink:#FFFFFF; --accent-soft:#DDF1EC; --accent-deep:#0A5A4F;
+  --bad:#B3261E; --bad-soft:#FBE6E3; --good:#1F7A3F; --good-soft:#E1F3E6; --gold:#8A5A00; --gold-soft:#FBEFD0;
+  --display:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  --body:"Figtree",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B131C; --card:#121D28; --ink:#E8EEF3; --muted:#9AA9B8; --line:#243240; --line2:#334455;
+  --accent:#4FD1BC; --accent-ink:#06201B; --accent-soft:#113A34; --accent-deep:#7FE3D3;
+  --bad:#FF8C7E; --bad-soft:#3A1F1C; --good:#6FD596; --good-soft:#15301F; --gold:#F1C65B; --gold-soft:#3A2E12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B131C; --card:#121D28; --ink:#E8EEF3; --muted:#9AA9B8; --line:#243240; --line2:#334455;
+  --accent:#4FD1BC; --accent-ink:#06201B; --accent-soft:#113A34; --accent-deep:#7FE3D3;
+  --bad:#FF8C7E; --bad-soft:#3A1F1C; --good:#6FD596; --good-soft:#15301F; --gold:#F1C65B; --gold-soft:#3A2E12; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+main{max-width:860px;margin:0 auto;padding-block:0 72px;display:flex;flex-direction:column;gap:64px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.08;letter-spacing:-.015em}
+h1{font-size:clamp(3rem,12vw,6rem);font-weight:800}
+h2{font-size:clamp(1.5rem,5vw,2.1rem);font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+.ms{font-family:"Material Symbols Outlined";font-weight:normal;font-style:normal;font-size:24px;line-height:1;display:inline-block;-webkit-font-smoothing:antialiased;font-feature-settings:"liga";user-select:none;flex:none}
+.tag{font:500 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)} .small{font-size:.88rem}
+.mirrorline{height:2px;background:linear-gradient(90deg,var(--accent),transparent);width:120px;border-radius:2px}
+
+/* sticky stage bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);padding-block:12px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line)}
+.bar .wm{font:800 1.1rem var(--display);letter-spacing:-.02em}
+.stages{display:flex;gap:6px;flex:1;min-width:0}
+.stages a{flex:1;height:6px;border-radius:3px;background:var(--line);text-decoration:none;position:relative;transition:background .4s}
+.stages a.done{background:var(--accent)}
+.stages a span{position:absolute;left:0;top:10px;font:500 .62rem var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.bar .pct{font:500 .78rem var(--mono);color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:520px){.stages a span{display:none}.bar{padding-block:10px}}
+
+/* hero */
+.hero{padding-top:36px;display:grid;grid-template-columns:1fr;gap:22px}
+.hero .title{position:relative;line-height:1}
+.hero .title .ref{display:block;transform:scaleY(-1);opacity:.14;margin-top:-.12em;
+  -webkit-mask-image:linear-gradient(to top,transparent 10%,#000 80%);mask-image:linear-gradient(to top,transparent 10%,#000 80%)}
+.hero .q{font-family:var(--display);font-weight:600;font-size:clamp(1.3rem,4.2vw,1.75rem);max-width:28ch;line-height:1.25;letter-spacing:-.01em}
+.hero .a{color:var(--muted);max-width:56ch;font-size:1.08rem}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.btn{font:600 1rem var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:12px;padding:13px 20px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;text-decoration:none;transition:transform .15s,background .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn:disabled{opacity:.4;cursor:default;transform:none}
+.btn:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{border-left:3px solid var(--accent);padding:6px 0 6px 14px;min-width:0}
+.kpi b{font:700 1.5rem var(--display);display:block;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi span{font-size:.85rem;color:var(--muted)}
+
+/* section header */
+.sh{display:flex;flex-direction:column;gap:10px}
+.sh p{color:var(--muted);max-width:62ch}
+
+/* compare */
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.col{border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.col.today{background:var(--bad-soft)} .col.with{background:var(--accent-soft)}
+.col h3{display:flex;gap:8px;align-items:center}
+.col.today h3{color:var(--bad)} .col.with h3{color:var(--accent-deep)}
+.col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.col li{display:flex;gap:12px;align-items:flex-start}
+.col li .ms{font-size:22px;margin-top:1px}
+.col.today li .ms{color:var(--bad)} .col.with li .ms{color:var(--accent-deep)}
+
+/* real case */
+.case{display:flex;flex-direction:column;gap:20px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.fact{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.fact .k{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.fact .v{font-weight:600;margin-top:4px;line-height:1.3}
+.fact.loss .v{color:var(--bad);font:800 1.6rem var(--display);letter-spacing:-.02em}
+.timeline{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;display:grid;grid-template-columns:28px 1fr;gap:0 14px}
+.timeline .dot{width:28px;display:flex;flex-direction:column;align-items:center}
+.timeline .dot i{width:12px;height:12px;border-radius:50%;background:var(--line2);margin-top:6px;flex:none}
+.timeline .dot i.hot{background:var(--bad)}
+.timeline .dot s{flex:1;width:2px;background:var(--line);text-decoration:none;margin-block:4px}
+.timeline .ev{padding-bottom:18px;min-width:0}
+.timeline .ev:last-child{padding-bottom:0}
+.timeline .ev b{display:block}
+.timeline .ev span{color:var(--muted);font-size:.92rem}
+.src{font-size:.8rem;color:var(--muted)} .src a{color:var(--accent)}
+.fixes{display:flex;flex-direction:column;gap:12px}
+.fix{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.fix h3{display:flex;gap:10px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);font-size:.98rem}
+.fix h3 .ms{color:var(--accent)}
+.fix h3 .n{font:500 .72rem var(--mono);color:var(--muted);margin-left:auto}
+.fix .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.fix .two>div{padding:16px 20px;display:flex;flex-direction:column;gap:6px;min-width:0;font-size:.95rem}
+.fix .then{background:var(--bad-soft)} .fix .now{background:var(--accent-soft)} .fix .intl{background:var(--card)}
+.fix .two{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.lbl{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em}
+.then .lbl{color:var(--bad)} .now .lbl{color:var(--accent-deep)} .intl .lbl{color:var(--gold)}
+.intl .lbl .ms{font-size:14px;vertical-align:-2px;margin-right:4px}
+
+/* steps */
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px;display:flex;flex-direction:column;gap:20px;position:relative;scroll-margin-top:72px}
+.step.done{border-color:var(--accent)}
+.step-top{display:flex;gap:16px;align-items:flex-start}
+.badge{flex:none;width:44px;height:44px;border-radius:12px;background:var(--ink);color:var(--bg);font:800 1.1rem var(--display);display:grid;place-items:center;transition:background .3s}
+.step.done .badge{background:var(--accent);color:var(--accent-ink)}
+.step-top p{color:var(--muted);margin-top:6px;max-width:60ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.result{border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;background:var(--good-soft)}
+.result .ms{color:var(--good)}
+.result.warn{background:var(--bad-soft)} .result.warn .ms{color:var(--bad)}
+
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:10px}
+.person{border:1.5px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center;background:var(--bg);transition:transform .3s,opacity .35s,border-color .35s,background .35s}
+.person .face{width:38px;height:38px;border-radius:50%;margin:0 auto 6px;background:var(--line);display:grid;place-items:center;color:var(--muted)}
+.person .who{font:500 .78rem var(--mono)}
+.person .org{font-size:.72rem;color:var(--muted);line-height:1.25}
+.person.in{border-color:var(--good);background:var(--good-soft)} .person.in .face{background:var(--good);color:#fff}
+.person.out{opacity:.3}
+.person.ban{border-color:var(--bad);background:var(--bad-soft)} .person.ban .face{background:var(--bad);color:#fff}
+.person.shake{transform:translateY(-6px) rotate(-3deg)}
+
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.env{border:1.5px solid var(--line);border-radius:14px;padding:16px;background:var(--bg);display:flex;flex-direction:column;gap:10px;min-width:0}
+.env .name{font:700 1.05rem var(--display)}
+.env .row{display:flex;justify-content:space-between;font-size:.88rem;gap:8px} .env .row b{font-variant-numeric:tabular-nums}
+.meter{height:8px;background:var(--line);border-radius:4px;overflow:hidden} .meter i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.env.win{border-color:var(--good);background:var(--good-soft)}
+.seal{font:500 .7rem var(--mono);color:var(--gold);background:var(--gold-soft);padding:3px 9px;border-radius:999px;align-self:flex-start;letter-spacing:.05em}
+.seal.w{color:var(--good);background:var(--card)}
+
+.flow{display:flex;flex-direction:column}
+.box{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:center;background:var(--bg);transition:opacity .4s,border-color .4s,background .4s}
+.box .ms{color:var(--accent)} .box .t{font-weight:600} .box .s{font-size:.85rem;color:var(--muted)}
+.box .amt{margin-left:auto;font:500 .95rem var(--mono);white-space:nowrap} .box>div{min-width:0}
+.box.dim{opacity:.28} .box.bad{border-color:var(--bad);background:var(--bad-soft)} .box.bad .ms{color:var(--bad)}
+.arrow{display:flex;justify-content:center;color:var(--line2);height:30px;align-items:center}
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.why div{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;min-width:0} .why .ms{color:var(--bad);font-size:20px}
+
+.reward{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px;align-items:center}
+.reward>div{min-width:0}
+input[type=range]{width:100%;accent-color:var(--accent);height:30px}
+.big{font:800 clamp(2rem,8vw,3rem) var(--display);color:var(--accent-deep);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* product */
+.arch{display:flex;flex-direction:column;gap:0}
+.layer{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:stretch}
+.layer .ln{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:10px 0}
+.layer .ln b{font:700 .95rem var(--display)} .layer .ln span{font-size:.78rem;color:var(--muted)}
+.layer .cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:10px 0}
+.cell{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card);min-width:0;font-size:.85rem;line-height:1.3}
+.cell b{display:block;font-weight:600;font-size:.88rem}
+.cell span{color:var(--muted);font-size:.78rem}
+.cell.core{border-color:var(--accent);background:var(--accent-soft)}
+.cell.ext{border-style:dashed}
+.lsep{height:26px;display:grid;grid-template-columns:150px 1fr;gap:14px}
+.lsep i{display:block;border-left:2px dashed var(--line2);margin-left:40px;height:100%}
+@media (max-width:620px){.layer,.lsep{grid-template-columns:1fr}.lsep{height:18px}.lsep i{margin-left:20px}}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th{font:500 .68rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+td.mono{font-family:var(--mono);font-size:.8rem;white-space:nowrap}
+.w{display:inline-block;font:500 .68rem var(--mono);padding:2px 8px;border-radius:999px}
+.w.hi{background:var(--bad-soft);color:var(--bad)} .w.md{background:var(--gold-soft);color:var(--gold)} .w.lo{background:var(--accent-soft);color:var(--accent-deep)}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.day h3{display:flex;justify-content:space-between;align-items:baseline;font-size:.95rem}
+.day h3 span{font:500 .7rem var(--mono);color:var(--muted)}
+.day ul{margin:10px 0 0;padding-left:18px;font-size:.88rem;display:flex;flex-direction:column;gap:5px}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.role{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;min-width:0}
+.role .ms{color:var(--accent);font-size:20px} .role b{display:block}
+.stack{display:flex;flex-wrap:wrap;gap:8px}
+.stack span{font:500 .78rem var(--mono);border:1px solid var(--line2);border-radius:999px;padding:4px 10px}
+.sub{font:700 1.1rem var(--display);margin-top:6px}
+
+/* access gate */
+.gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:24px}
+.gate form{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:32px 28px;display:flex;flex-direction:column;gap:14px;width:min(100%,360px);text-align:center}
+.gate .wm{font:800 2rem var(--display);letter-spacing:-.02em}
+.gate input{font:600 1.6rem var(--mono);letter-spacing:.4em;text-align:center;padding:12px;border:1.5px solid var(--line2);border-radius:12px;background:var(--bg);color:var(--ink);width:100%}
+.gate .err{color:var(--bad);font-size:.85rem;min-height:1.2em}
+main[hidden]{display:none}
+
+/* outputs */
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:500 .8rem var(--mono);border:1.5px solid var(--line2);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.outs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.out{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start;min-width:0}
+.out .ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent-deep);display:grid;place-items:center}
+.out .t{font-weight:600;line-height:1.3} .out .s{font-size:.85rem;color:var(--muted);margin-top:3px}
+.mvp{font:500 .64rem var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--gold);background:var(--gold-soft);padding:2px 7px;border-radius:999px;margin-left:6px;white-space:nowrap;vertical-align:middle}
+.out[hidden]{display:none}
+
+.close{text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;padding:36px 16px;background:var(--ink);color:var(--bg);border-radius:var(--r)}
+.close h2{max-width:20ch;color:var(--bg)} .close .tag{color:var(--accent)}
+footer{text-align:center;font-size:.8rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+
+<div class="gate" id="gate">
+  <form id="gateForm" autocomplete="off">
+    <div class="wm">Тусгал</div>
+    <p class="muted small">Private preview. Enter the access code.</p>
+    <input id="code" type="password" inputmode="numeric" maxlength="8" aria-label="Access code" autofocus>
+    <div class="err" id="gateErr" aria-live="polite"></div>
+    <button class="btn" type="submit" style="justify-content:center"><span class="ms">lock_open</span>Open</button>
+  </form>
+</div>
+<main>
+  <nav class="bar" aria-label="Progress">
+    <span class="wm">Тусгал</span>
+    <div class="stages">
+      <a href="#s1" id="p1"><span>Committee</span></a>
+      <a href="#s2" id="p2"><span>Scoring</span></a>
+      <a href="#s3" id="p3"><span>Money</span></a>
+      <a href="#s4" id="p4"><span>Reward</span></a>
+    </div>
+    <span class="pct" id="pct">0 / 4</span>
+  </nav>
+
+  <header class="hero">
+    <span class="tag">HACK THE SYSTEM · Tech Against Corruption · Nov 2026</span>
+    <div class="title"><h1>Тусгал<span class="ref" aria-hidden="true">Тусгал</span></h1></div>
+    <p class="q">A tender is a decision made in the dark. Тусгал is the mirror that lights every step of it.</p>
+    <p class="a">Who judges the bid. Which bid wins. Where the money goes after. Who dares to speak. One system makes all four visible, so corruption is hard to start and hard to hide.</p>
+    <div class="cta">
+      <a class="btn" href="#s1"><span class="ms">play_arrow</span>Try the 4 steps</a>
+      <a class="btn ghost" href="#case"><span class="ms">gavel</span>See a real case</a>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><b>₮102 M</b><span>lost in one loader tender, Dornogovi 2023</span></div>
+      <div class="kpi"><b>5 of 12</b><span>evaluators drawn at random, never known in advance</span></div>
+      <div class="kpi"><b>10%</b><span>of recovered money to the person who reports</span></div>
+    </div>
+  </header>
+
+  <section class="sh" aria-labelledby="hcmp">
+    <span class="tag">The problem</span>
+    <h2 id="hcmp">Four doors that corruption walks through</h2>
+    <div class="mirrorline"></div>
+    <div class="compare" style="margin-top:8px">
+      <div class="col today">
+        <h3><span class="ms">visibility_off</span>Today</h3>
+        <ul>
+          <li><span class="ms">person_search</span><span>The committee is known in advance, so it can be approached.</span></li>
+          <li><span class="ms">badge</span><span>Evaluators see company names, so friends get favoured.</span></li>
+          <li><span class="ms">money_off</span><span>Once paid, the money leaves public view.</span></li>
+          <li><span class="ms">volume_off</span><span>Insiders stay silent. Speaking costs them, silence costs nothing.</span></li>
+        </ul>
+      </div>
+      <div class="col with">
+        <h3><span class="ms">visibility</span>With Тусгал</h3>
+        <ul>
+          <li><span class="ms">casino</span><span>The committee is drawn by public lottery at the last moment.</span></li>
+          <li><span class="ms">mail</span><span>Bids are scored as A, B, C. Names open after scores are sealed.</span></li>
+          <li><span class="ms">route</span><span>Every tögrög is tracked from budget to final recipient.</span></li>
+          <li><span class="ms">campaign</span><span>Whoever reports fraud gets 10% of what the court recovers.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="case" id="case" aria-labelledby="hc">
+    <div class="sh">
+      <span class="tag">A real case</span>
+      <h2 id="hc">The wheel loader tender in Dornogovi</h2>
+      <div class="mirrorline"></div>
+      <p>In January 2023 prosecutors sent this case to court. It shows the most common pattern in Mongolian procurement: the people who wanted a certain company to win also controlled the committee that chose it.</p>
+    </div>
+    <div class="facts">
+      <div class="fact"><div class="k">Buyer</div><div class="v">Chandman-Ilch, a locally owned state company</div></div>
+      <div class="fact"><div class="k">Purchase</div><div class="v">Wheel loaders for the Urgun branch</div></div>
+      <div class="fact loss"><div class="k">Loss to the state</div><div class="v">₮102 million</div></div>
+      <div class="fact"><div class="k">Charge</div><div class="v">Abuse of power, Criminal Code 22.1.2</div></div>
+    </div>
+    <div class="timeline" role="list">
+      <div class="dot"><i></i><s></s></div><div class="ev" role="listitem"><b>The buyer decides it needs loaders</b><span>The director, supply manager and chief engineer agree on a company they want to win.</span></div>
+      <div class="dot"><i class="hot"></i><s></s></div><div class="ev" role="listitem"><b>The buyer's own accountant chairs the committee</b><span>The person judging the bids reports to the people who picked the favourite.</span></div>
+      <div class="dot"><i class="hot"></i><s></s></div><div class="ev" role="listitem"><b>The favourite wins</b><span>Prosecutors say the group misused their positions to steer the award.</span></div>
+      <div class="dot"><i class="hot"></i><s></s></div><div class="ev" role="listitem"><b>₮102 million is lost</b><span>Discovered only afterwards, by investigators.</span></div>
+      <div class="dot"><i></i></div><div class="ev" role="listitem"><b>January 2023: case goes to court</b><span>Four officials charged with abuse of power. They are presumed innocent until the court rules.</span></div>
+    </div>
+    <span class="src">Source: Prosecutor's Office weekly report, via <a href="https://ubn.mn/p/36621">UBN, 16 Jan 2023</a>. The report does not name the winning company or the bid prices.</span>
+
+    <h3 style="margin-top:8px">How each part of Тусгал would have stopped it</h3>
+    <div class="fixes">
+      <div class="fix"><h3><span class="ms">casino</span>Random committee<span class="n">step 1</span></h3><div class="two">
+        <div class="then"><span class="lbl">What happened</span><span>The chair was the buyer's own chief accountant. The director's team judged its own tender.</span></div>
+        <div class="now"><span class="lbl">With Тусгал</span><span>Members are drawn from a pool across agencies and aimags. The buyer's staff cannot sit, and nobody knows the names until the draw.</span></div>
+        <div class="intl"><span class="lbl"><span class="ms">public</span>International practice</span><span>Korea's national e-procurement system (KONEPS) draws evaluators at random from a pool of thousands of registered experts and tells them only shortly before the meeting. Courts in many countries, including Mongolia, already assign judges to cases by electronic lottery for the same reason.</span></div>
+      </div></div>
+      <div class="fix"><h3><span class="ms">mail</span>Blind scoring<span class="n">step 2</span></h3><div class="two">
+        <div class="then"><span class="lbl">What happened</span><span>The committee knew which bid was the favourite and scored it up.</span></div>
+        <div class="now"><span class="lbl">With Тусгал</span><span>Bids arrive as A, B and C. Scores are sealed before names open, so there is no favourite to push.</span></div>
+        <div class="intl"><span class="lbl"><span class="ms">public</span>International practice</span><span>EU procurement uses a two-envelope rule: technical bids are scored before the price envelope is opened. Ukraine's ProZorro publishes every bid and score, so any citizen can re-check the result. Orchestras that moved to blind auditions behind a screen saw hiring change measurably.</span></div>
+      </div></div>
+      <div class="fix"><h3><span class="ms">flag</span>Red flags before signing<span class="n">step 3</span></h3><div class="two">
+        <div class="then"><span class="lbl">What happened</span><span>Nothing warned anyone. The loss was found later by investigators.</span></div>
+        <div class="now"><span class="lbl">With Тусгал</span><span>The price is compared with what other state bodies paid for the same loader model, and the winner's owners are checked against the buyer's managers. Either raises an alert before signing.</span></div>
+        <div class="intl"><span class="lbl"><span class="ms">public</span>International practice</span><span>The European Commission's ARACHNE tool scores every EU-funded contract for risk using over 100 indicators. Brazil's audit court runs a robot called Alice that reads new tenders every night and flags suspicious ones to auditors before they are signed.</span></div>
+      </div></div>
+      <div class="fix"><h3><span class="ms">route</span>Traceable payment<span class="n">step 3</span></h3><div class="two">
+        <div class="then"><span class="lbl">What happened</span><span>Once paid, nobody could see whether money came back to the officials.</span></div>
+        <div class="now"><span class="lbl">With Тусгал</span><span>Paid in digital tögrög. Any onward payment to a company or relative linked to the director, engineer or accountant shows on the record.</span></div>
+        <div class="intl"><span class="lbl"><span class="ms">public</span>International practice</span><span>Ukraine's Spending.gov.ua publishes every payment from the state treasury, to every recipient, within days. Brazil's Transparency Portal has done the same for federal payments since 2004. China pays some civil servant salaries and subsidies in e-CNY, its central bank digital currency.</span></div>
+      </div></div>
+      <div class="fix"><h3><span class="ms">campaign</span>Whistleblower reward<span class="n">step 4</span></h3><div class="two">
+        <div class="then"><span class="lbl">What happened</span><span>People inside the company knew. Speaking would have risked their jobs for nothing.</span></div>
+        <div class="now"><span class="lbl">With Тусгал</span><span>A losing bidder or an employee reports anonymously. If the court recovers ₮102 million, they receive <b>₮10.2 million</b>.</span></div>
+        <div class="intl"><span class="lbl"><span class="ms">public</span>International practice</span><span>The US False Claims Act pays whistleblowers 15 to 30% of recovered funds and has returned over 70 billion dollars since 1986. The US SEC pays 10 to 30% of sanctions above 1 million dollars. Korea's Anti-Corruption and Civil Rights Commission pays rewards of up to 3 billion won.</span></div>
+      </div></div>
+    </div>
+  </section>
+
+  <div class="sh">
+    <span class="tag">Try it yourself</span>
+    <h2>Run Тусгал on a sample tender</h2>
+    <div class="mirrorline"></div>
+    <p>A ₮5 billion road repair with fictional companies. Press each step and watch the bar at the top fill.</p>
+  </div>
+
+  <section class="step" id="s1" aria-labelledby="h1s">
+    <div class="step-top"><span class="badge">1</span><div>
+      <h2 id="h1s">Who will judge the tender?</h2>
+      <p>12 trained evaluators from 6 agencies. Nobody knows which 5 will be chosen until the draw. Anyone with a family or business link to a bidder is removed first.</p>
+    </div></div>
+    <div class="people" id="people"></div>
+    <div class="actions"><button class="btn" id="drawBtn"><span class="ms">casino</span>Draw the committee</button></div>
+    <div class="result" id="r1" hidden><span class="ms">check_circle</span><span>5 evaluators chosen at random. <b>E07 was removed</b> because a relative co-owns one of the bidding companies. The draw uses a public number, so anyone can repeat it and confirm it was fair.</span></div>
+  </section>
+
+  <section class="step" id="s2" aria-labelledby="h2s">
+    <div class="step-top"><span class="badge">2</span><div>
+      <h2 id="h2s">Which bid is best?</h2>
+      <p>The committee sees only price and quality, never the company name. Scores are sealed before the envelopes are opened.</p>
+    </div></div>
+    <div class="envs" id="envs"></div>
+    <div class="actions">
+      <button class="btn" id="sealBtn"><span class="ms">lock</span>Seal the scores</button>
+      <button class="btn ghost" id="openBtn" disabled><span class="ms">drafts</span>Open envelopes</button>
+    </div>
+    <div class="result" id="r2" hidden><span class="ms">check_circle</span><span>The winner was chosen on quality and price alone. Because the scores were sealed first, nobody could change them after seeing the names.</span></div>
+  </section>
+
+  <section class="step" id="s3" aria-labelledby="h3s">
+    <div class="step-top"><span class="badge">3</span><div>
+      <h2 id="h3s">Where does the money go?</h2>
+      <p>The winner is paid in a digital tögrög issued by the Bank of Mongolia. Every payment it makes onward stays on the record.</p>
+    </div></div>
+    <div class="actions"><button class="btn" id="traceBtn"><span class="ms">route</span>Follow the money</button></div>
+    <div class="flow" id="flow">
+      <div class="box dim"><span class="ms">account_balance</span><div><div class="t">State budget</div><div class="s">Ministry of Roads</div></div><span class="amt">₮5.0 bn</span></div>
+      <div class="arrow"><span class="ms">south</span></div>
+      <div class="box dim"><span class="ms">construction</span><div><div class="t">Steppe Road Build</div><div class="s">Winning company, 214 workers</div></div><span class="amt">₮5.0 bn</span></div>
+      <div class="arrow"><span class="ms">south</span></div>
+      <div class="box dim"><span class="ms">local_shipping</span><div><div class="t">Gobi Bitum</div><div class="s">Asphalt supplier, delivery confirmed</div></div><span class="amt">₮2.1 bn</span></div>
+      <div class="arrow"><span class="ms">south</span></div>
+      <div class="box dim"><span class="ms">help</span><div><div class="t">Altan Shonkhor</div><div class="s">"Consulting services"</div></div><span class="amt">₮1.5 bn</span></div>
+    </div>
+    <div class="result warn" id="r3" hidden><span class="ms">warning</span><div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <b>Red flag: ₮1.5 billion went to a suspicious company</b>
+      <div class="why">
+        <div><span class="ms">event</span><span>Opened 16 days before the contract</span></div>
+        <div><span class="ms">group_off</span><span>Has no employees</span></div>
+        <div><span class="ms">percent</span><span>30% of a road budget for "consulting"</span></div>
+        <div><span class="ms">family_restroom</span><span>Owned by the brother of the official who wrote the tender</span></div>
+      </div>
+      <span class="small muted">The alert goes to auditors and the IAAC. The system shows the link; people decide.</span>
+    </div></div>
+  </section>
+
+  <section class="step" id="s4" aria-labelledby="h4s">
+    <div class="step-top"><span class="badge">4</span><div>
+      <h2 id="h4s">What if someone knows more?</h2>
+      <p>Cash bribes never touch the record. So we pay the people who report them, and protect who they are.</p>
+    </div></div>
+    <div class="reward">
+      <div>
+        <label for="rec" class="small muted">Money the court recovers</label>
+        <input id="rec" type="range" min="100" max="5000" step="100" value="1500">
+        <div id="recVal" class="small" style="font-variant-numeric:tabular-nums"></div>
+      </div>
+      <div>
+        <div class="small muted">Reward for the whistleblower (10%)</div>
+        <div class="big" id="reward"></div>
+        <div class="small muted">Paid only after the money is actually recovered</div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="sh" aria-labelledby="hp">
+    <span class="tag">What we build</span>
+    <h2 id="hp">The product, piece by piece</h2>
+    <div class="mirrorline"></div>
+    <p>Тусгал is one platform with five services on a shared data core. Below: where the data comes from, what each service does, which signals raise a flag, how the data moves, and what we can realistically ship in 48 hours.</p>
+
+    <div class="sub">Architecture</div>
+    <div class="arch" aria-label="Five layers from data sources to users">
+      <div class="layer"><div class="ln"><b>Sources</b><span>Open data we read</span></div><div class="cells">
+        <div class="cell ext"><b>tender.gov.mn</b><span>Tenders, bids, awards, contracts</span></div>
+        <div class="cell ext"><b>Company registry</b><span>Owners, directors, founding date</span></div>
+        <div class="cell ext"><b>IAAC declarations</b><span>Officials' assets and relatives</span></div>
+        <div class="cell ext"><b>Шилэн данс</b><span>Budget transparency accounts</span></div>
+        <div class="cell ext"><b>Social insurance</b><span>Headcount per company</span></div>
+      </div></div>
+      <div class="lsep"><div></div><i></i></div>
+      <div class="layer"><div class="ln"><b>Data core</b><span>Cleaning and linking</span></div><div class="cells">
+        <div class="cell"><b>Ingestion</b><span>Nightly pull, versioned snapshots</span></div>
+        <div class="cell"><b>Entity resolution</b><span>One ID per company, person, agency</span></div>
+        <div class="cell"><b>Knowledge graph</b><span>Owns, directs, related-to, awarded, paid</span></div>
+        <div class="cell"><b>Price index</b><span>Unit prices per item across buyers</span></div>
+      </div></div>
+      <div class="lsep"><div></div><i></i></div>
+      <div class="layer"><div class="ln"><b>Services</b><span>The five mirrors</span></div><div class="cells">
+        <div class="cell core"><b>Lottery</b><span>Pool, conflict filter, public seed</span></div>
+        <div class="cell core"><b>Sealed scoring</b><span>Anonymise bids, commit hash</span></div>
+        <div class="cell core"><b>Risk engine</b><span>Indicators → score and reasons</span></div>
+        <div class="cell core"><b>Ledger</b><span>Payment graph, digital tögrög</span></div>
+        <div class="cell core"><b>Report box</b><span>Anonymous intake, case states</span></div>
+      </div></div>
+      <div class="lsep"><div></div><i></i></div>
+      <div class="layer"><div class="ln"><b>Interfaces</b><span>How people reach it</span></div><div class="cells">
+        <div class="cell"><b>Public portal</b><span>Search, tender page, map</span></div>
+        <div class="cell"><b>Auditor console</b><span>Flag queue, evidence, export</span></div>
+        <div class="cell"><b>Telegram bot</b><span>Subscribe to a buyer or aimag</span></div>
+        <div class="cell"><b>Open API</b><span>JSON for journalists and NGOs</span></div>
+      </div></div>
+      <div class="lsep"><div></div><i></i></div>
+      <div class="layer"><div class="ln"><b>Users</b><span>Who it serves</span></div><div class="cells">
+        <div class="cell ext"><b>Citizens</b></div><div class="cell ext"><b>Journalists, NGOs</b></div><div class="cell ext"><b>Audit Office, IAAC</b></div><div class="cell ext"><b>Procuring agencies</b></div><div class="cell ext"><b>Bidders</b></div>
+      </div></div>
+    </div>
+
+    <div class="sub">Risk engine: the signals</div>
+    <p class="small muted">Each indicator adds points. A tender over 60 is flagged and the reasons are shown in plain words. Thresholds are a starting point to tune on real data.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Signal</th><th>How we compute it</th><th>Data</th><th>Weight</th></tr></thead>
+      <tbody>
+        <tr><td>Single bidder</td><td>Only one valid bid received</td><td class="mono">tender</td><td><span class="w md">+20</span></td></tr>
+        <tr><td>Repeat winner</td><td>Same company wins over 50% of a buyer's tenders in 24 months</td><td class="mono">tender</td><td><span class="w md">+20</span></td></tr>
+        <tr><td>Price near ceiling</td><td>Winning bid within 2% of the estimated budget</td><td class="mono">tender</td><td><span class="w lo">+10</span></td></tr>
+        <tr><td>Short window</td><td>Under 10 days between notice and deadline</td><td class="mono">tender</td><td><span class="w lo">+10</span></td></tr>
+        <tr><td>Young company</td><td>Winner registered less than 6 months before award</td><td class="mono">registry</td><td><span class="w md">+20</span></td></tr>
+        <tr><td>No staff</td><td>Zero or near-zero insured employees</td><td class="mono">insurance</td><td><span class="w md">+20</span></td></tr>
+        <tr><td>Unit price outlier</td><td>Price per item over 1.5× the median other buyers paid</td><td class="mono">price index</td><td><span class="w hi">+30</span></td></tr>
+        <tr><td>Ownership link</td><td>Winner's owner is, or is related to, a buyer official or evaluator</td><td class="mono">registry + IAAC</td><td><span class="w hi">+40</span></td></tr>
+        <tr><td>Cancel and re-tender</td><td>Same item tendered again within 90 days with a different winner</td><td class="mono">tender</td><td><span class="w lo">+10</span></td></tr>
+        <tr><td>Onward payment to linked party</td><td>Contractor pays a company linked to the buyer side</td><td class="mono">ledger + registry</td><td><span class="w hi">+40</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub">How a tender moves through the system</div>
+    <div class="tbl"><table>
+      <thead><tr><th>Stage</th><th>What Тусгал does</th><th>What is written to the record</th></tr></thead>
+      <tbody>
+        <tr><td>Notice published</td><td>Reads the tender, estimates a fair unit price from the index</td><td class="mono">tender_id, fair_price</td></tr>
+        <tr><td>Bids close</td><td>Strips company names, assigns Bid A/B/C, runs the conflict filter on the pool</td><td class="mono">bid_alias, exclusions</td></tr>
+        <tr><td>Draw</td><td>Publishes the seed, draws 5 evaluators, issues a certificate anyone can recompute</td><td class="mono">seed, committee, cert_hash</td></tr>
+        <tr><td>Scoring</td><td>Collects scores, hashes them, locks the hash before names are revealed</td><td class="mono">scores_hash, timestamp</td></tr>
+        <tr><td>Award</td><td>Runs the risk engine. Over 60 → alert to auditors and subscribers before signing</td><td class="mono">risk_score, reasons[]</td></tr>
+        <tr><td>Payment</td><td>Tracks each transfer of digital tögrög from budget to final recipient</td><td class="mono">payment graph</td></tr>
+        <tr><td>Report</td><td>Receives anonymous reports, links them to the tender, tracks the case to recovery and reward</td><td class="mono">case_id, state, reward</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub">Stack</div>
+    <div class="stack"><span>Python</span><span>PostgreSQL</span><span>Neo4j or pg graph</span><span>FastAPI</span><span>Next.js</span><span>Telegram Bot API</span><span>SHA-256 commitments</span><span>Hyperledger Fabric (ledger demo)</span><span>Mapbox</span></div>
+
+    <div class="sub">48-hour plan</div>
+    <div class="plan">
+      <div class="day"><h3>Pre-hackathon<span>before 27 Nov</span></h3><ul><li>Pull 2 years of tenders from tender.gov.mn</li><li>Match winners to the company registry</li><li>Pick 3 real tenders to demo on</li><li>Agree indicator thresholds</li></ul></div>
+      <div class="day"><h3>Day 1<span>Fri 27 Nov</span></h3><ul><li>Data core: load, clean, link entities</li><li>Risk engine with the 10 indicators</li><li>Lottery and sealed-scoring services</li><li>First tender page in the portal</li></ul></div>
+      <div class="day"><h3>Day 2<span>Sat 28 Nov</span></h3><ul><li>Money trail on the simulated ledger</li><li>Telegram alerts</li><li>Auditor flag queue</li><li>Run the 3 real tenders end to end, rehearse the demo</li></ul></div>
+    </div>
+
+    <div class="sub">Team</div>
+    <div class="roles">
+      <div class="role"><span class="ms">database</span><div><b>Data engineer</b>Ingestion, entity matching, graph</div></div>
+      <div class="role"><span class="ms">code</span><div><b>Backend developer</b>Lottery, sealing, risk engine, API</div></div>
+      <div class="role"><span class="ms">web</span><div><b>Frontend developer</b>Portal, auditor console, bot</div></div>
+      <div class="role"><span class="ms">account_balance</span><div><b>Economist</b>Price index, thresholds, policy paper</div></div>
+      <div class="role"><span class="ms">gavel</span><div><b>Lawyer</b>Fit with the Procurement and Anti-Corruption Laws</div></div>
+    </div>
+  </section>
+
+  <section class="sh" aria-labelledby="ho">
+    <span class="tag">What we deliver</span>
+    <h2 id="ho">Outputs</h2>
+    <div class="mirrorline"></div>
+    <p>Every output fits a solution type from the hackathon brief. <span class="mvp">MVP</span> marks what we build in the two days.</p>
+    <div class="filters" role="group" aria-label="Filter outputs">
+      <button class="chip" aria-pressed="true" data-f="all">All 10</button>
+      <button class="chip" aria-pressed="false" data-f="mvp">MVP only</button>
+      <button class="chip" aria-pressed="false" data-f="policy">Policy</button>
+    </div>
+    <div class="outs" id="outs">
+      <div class="out" data-k="mvp"><span class="ic"><span class="ms">casino</span></span><div><div class="t">Fair draw certificate<span class="mvp">MVP</span></div><div class="s">Proof of who was drawn and why. Algorithm.</div></div></div>
+      <div class="out" data-k="mvp"><span class="ic"><span class="ms">lock</span></span><div><div class="t">Sealed scoring record<span class="mvp">MVP</span></div><div class="s">Scores that cannot be changed later. Algorithm.</div></div></div>
+      <div class="out" data-k="mvp"><span class="ic"><span class="ms">flag</span></span><div><div class="t">Tender risk score<span class="mvp">MVP</span></div><div class="s">Each tender rated, with reasons. Risk-detection algorithm.</div></div></div>
+      <div class="out" data-k="mvp"><span class="ic"><span class="ms">route</span></span><div><div class="t">Money trail<span class="mvp">MVP</span></div><div class="s">From budget to final recipient. Network analysis tool.</div></div></div>
+      <div class="out" data-k="later"><span class="ic"><span class="ms">hub</span></span><div><div class="t">Company and official link map</div><div class="s">Owners, relatives, declarations. Network analysis tool.</div></div></div>
+      <div class="out" data-k="later"><span class="ic"><span class="ms">map</span></span><div><div class="t">Public spending dashboard</div><div class="s">By aimag and district. Dashboard and interactive map.</div></div></div>
+      <div class="out" data-k="later"><span class="ic"><span class="ms">notifications_active</span></span><div><div class="t">Telegram alert bot</div><div class="s">Warns before a risky award. Alert system.</div></div></div>
+      <div class="out" data-k="later"><span class="ic"><span class="ms">search</span></span><div><div class="t">Search anything</div><div class="s">Any company, official or tender. Search engine.</div></div></div>
+      <div class="out" data-k="later"><span class="ic"><span class="ms">shield_person</span></span><div><div class="t">Safe report box</div><div class="s">Anonymous reports with a case tracker. Citizen platform.</div></div></div>
+      <div class="out" data-k="policy"><span class="ic"><span class="ms">gavel</span></span><div><div class="t">Policy proposal</div><div class="s">Digital tögrög payments and lottery committees, for Parliament and the Bank of Mongolia.</div></div></div>
+    </div>
+  </section>
+
+  <div class="close">
+    <span class="tag">In one line</span>
+    <h2>Prevent before the award. Detect after it.</h2>
+    <p class="small" style="opacity:.7">Тусгал · The Mirror</p>
+  </div>
+
+  <footer>Demo with sample data. The Dornogovi case is from public prosecutor reports; all other companies and people are fictional. Proposal for HACK THE SYSTEM, Gerege Policy Think Tank.</footer>
+</main>
+
+<script>
+(async()=>{const H="79f06f8fde333461739f220090a23cb2a79f6d714bee100d0e4b4af249294619";const g=document.getElementById("gate"),m=document.querySelector("main");
+async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function open(){g.remove();m.hidden=false;try{sessionStorage.setItem("tusgal_ok","1")}catch(e){}}
+try{if(sessionStorage.getItem("tusgal_ok")==="1"){open();return}}catch(e){}
+m.hidden=true;
+document.getElementById("gateForm").onsubmit=async e=>{e.preventDefault();const v=document.getElementById("code").value.trim();
+  if(!v){document.getElementById("gateErr").textContent="Enter the code.";return}
+  if(await sha(v)===H)open();else{document.getElementById("gateErr").textContent="Wrong code. Try again.";document.getElementById("code").value="";}};
+})();
+</script>
+<script>
+const done={};
+function mark(n){if(done[n])return;done[n]=true;document.getElementById("p"+n).classList.add("done");document.getElementById("s"+n).classList.add("done");
+  const c=Object.keys(done).length;document.getElementById("pct").textContent=c+" / 4"+(c===4?" · complete":"");}
+
+const pool=[["E01","Roads"],["E02","Finance"],["E03","UB City"],["E04","Construction"],["E05","Audit Office"],["E06","Roads"],["E07","Finance",1],["E08","Darkhan"],["E09","Construction"],["E10","UB City"],["E11","Orkhon"],["E12","Audit Office"]];
+const P=document.getElementById("people");
+P.innerHTML=pool.map(([id,o])=>`<div class="person" data-id="${id}"><div class="face"><span class="ms">person</span></div><div class="who">${id}</div><div class="org">${o}</div></div>`).join("");
+const els=[...P.children];
+function h(s){let x=2166136261;for(const c of s){x^=c.charCodeAt(0);x=Math.imul(x,16777619)>>>0}return x}
+document.getElementById("drawBtn").onclick=e=>{
+  e.currentTarget.disabled=true;
+  let n=0;const t=setInterval(()=>{els.forEach((el,i)=>el.classList.toggle("shake",(i+n)%3===0));n++;
+    if(n>7){clearInterval(t);els.forEach(el=>el.classList.remove("shake"));
+      const seed="Lottery #1847 2026-11-27";
+      const ok=pool.filter(p=>!p[2]).map(p=>[p[0],h(seed+p[0])]).sort((a,b)=>a[1]-b[1]).slice(0,5).map(p=>p[0]);
+      els.forEach(el=>{const id=el.dataset.id;const ban=pool.find(p=>p[0]===id)[2];
+        el.classList.add(ban?"ban":ok.includes(id)?"in":"out");
+        el.querySelector(".face").innerHTML=ban?'<span class="ms">block</span>':ok.includes(id)?'<span class="ms">check</span>':'<span class="ms">person</span>';});
+      document.getElementById("r1").hidden=false;mark(1);}},140);
+};
+
+const bids=[["A",4.80,82,"Steppe Road Build"],["B",4.65,61,"Talst Zam"],["C",5.00,74,"Orkhon Infra"]];
+const E=document.getElementById("envs");
+const score=(p,q)=>Math.round((4.65/p)*40+q*0.6);
+function draw(state){
+  const best=[...bids].sort((a,b)=>score(b[1],b[2])-score(a[1],a[2]))[0][0];
+  E.innerHTML=bids.map(([k,p,q,n])=>{const win=state==="open"&&k===best;
+    return `<div class="env${win?" win":""}">
+      <div class="name">${state==="open"?n:"Bid "+k}</div>
+      <div class="row"><span class="muted">Price</span><b>₮${p.toFixed(2)} bn</b></div>
+      <div class="row"><span class="muted">Quality</span><b>${q}/100</b></div>
+      <div class="meter"><i style="width:${q}%"></i></div>
+      <div class="row"><span class="muted">Total score</span><b>${score(p,q)}</b></div>
+      ${state==="sealed"?'<span class="seal">sealed</span>':""}${win?'<span class="seal w">winner</span>':""}
+    </div>`}).join("");
+}
+draw("blind");
+document.getElementById("sealBtn").onclick=e=>{draw("sealed");e.currentTarget.disabled=true;document.getElementById("openBtn").disabled=false;};
+document.getElementById("openBtn").onclick=e=>{draw("open");e.currentTarget.disabled=true;document.getElementById("r2").hidden=false;mark(2);};
+
+document.getElementById("traceBtn").onclick=e=>{
+  e.currentTarget.disabled=true;
+  const boxes=[...document.querySelectorAll("#flow .box")];
+  boxes.forEach((b,i)=>setTimeout(()=>{b.classList.remove("dim");
+    if(i===3){b.classList.add("bad");b.querySelector(".ms").textContent="warning";document.getElementById("r3").hidden=false;mark(3);}},450*(i+1)));
+};
+
+const rec=document.getElementById("rec");
+const fmt=n=>"₮"+Math.round(n).toLocaleString("en-US");
+function upd(){const v=+rec.value*1e6;document.getElementById("recVal").textContent=fmt(v);document.getElementById("reward").textContent=fmt(v*0.1);}
+rec.oninput=()=>{upd();mark(4);};upd();
+
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===c));
+  const f=c.dataset.f;document.querySelectorAll("#outs .out").forEach(o=>o.hidden=!(f==="all"||o.dataset.k===f));
+});
+</script>
+
+</body>
+</html>
