@@ -14,3 +14,12 @@ Preview locally:
 ```bash
 docker build -t tagent-landing landing && docker run --rm -p 8080:8080 tagent-landing
 ```
+
+## Тусгал preview (`tusgal/`)
+
+`tusgal/index.html` is the private preview page for the HACK THE SYSTEM 2026 proposal: a static
+page with its own access-code gate, marked `noindex`. The same container serves it at
+<https://tagent.space/tusgal/>, and `nginx.conf` has a server block for `tusgal.tagent.space`
+that goes live once that hostname is added as a custom domain on the `landing` service in
+Railway and Cloudflare has the proxied CNAME Railway asks for. It is deliberately not a tile on
+the phone.
