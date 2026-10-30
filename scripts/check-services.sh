@@ -22,6 +22,7 @@ check 'Fitness web'              https://fitness.tagent.space/              200
 check 'Fitness api health'       https://fitness.tagent.space/api/health    200
 check 'Nomadex race control'     https://project1.tagent.space/             200
 check 'Nomadex api health'       https://project1.tagent.space/api/health   200
+check 'Tusgal preview'           https://tagent.space/tusgal/               200
 
 echo "== sonorgroup.mn (company services) =="
 check 'Sonor auto parts market'  https://22.sonorgroup.mn/                  200
