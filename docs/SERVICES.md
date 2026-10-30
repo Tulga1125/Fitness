@@ -15,6 +15,8 @@ and Railway's API only allows `railway.com`:
 
 | Path on tagent.space | Proxies to | Up when |
 |---|---|---|
+| `/status/landing` | this container's own `index.html` | 2xx |
+| `/status/tusgal` | this container's `tusgal/index.html` | 2xx |
 | `/status/fitness` | `https://fitness.tagent.space/api/health` | 2xx |
 | `/status/nomadex` | `https://project1.tagent.space/api/health` | 2xx |
 | `/status/sonor-parts` | `https://22.sonorgroup.mn/api/health` | 2xx |
@@ -40,6 +42,7 @@ Snapshot below: 2026-10-25 07:35 UTC. All checks passed.
 | [x] | Fitness api | <https://fitness.tagent.space/api/health> | `{"ok":true,"writable":true}` | `api` service, reached through `web` over `api.railway.internal` |
 | [x] | Nomadex race control | <https://project1.tagent.space> | HTTP 200 | `ydkk8lwu.up.railway.app` |
 | [x] | Nomadex api | <https://project1.tagent.space/api/health> | HTTP 200 | same service |
+| [x] | Тусгал preview | <https://tagent.space/tusgal/> | HTTP 200, `noindex` headers | `landing` service, access-code gate on the page |
 | [ ] | T Loan | none yet | listed as *Pending* on the landing page | not deployed |
 
 All four hostnames are proxied CNAMEs on Cloudflare (SSL mode *Full*). The `*.up.railway.app`
