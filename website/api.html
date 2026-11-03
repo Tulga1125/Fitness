@@ -222,6 +222,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <a class="side-link" href="#activity"><b>Activity</b><span>Live presence</span></a>
   <a class="side-link" href="#media"><b>Media</b><span>Photos &amp; videos of your exercises &amp; workouts</span></a>
   <a class="side-link" href="#coach"><b>AI Coach</b><span>Plans, reviews, debriefs</span></a>
+  <a class="side-link" href="#bair"><b>Bair Hunt</b><span>Apartment list for tagent.space/bair</span></a>
   <a class="side-link" href="#admin"><b>Admin</b><span>Users, invites, audit log, Coach</span></a>
   <a class="side-link" href="#schemas"><b>Schemas</b><span>The state blob, the error shape &amp; co.</span></a>
   <p class="side-label">More</p>
@@ -245,7 +246,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.1</span>
-    <span>69 endpoints</span>
+    <span>71 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -2473,6 +2474,106 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
 </section>
 
+<section class="api-sec" id="bair">
+  <h2>Bair Hunt</h2>
+  <p class="sub">Bair Hunt, the apartment-search log at tagent.space/bair/: one shared list behind a PIN (the <code>BAIR_PIN</code> environment variable; unset or <code>off</code>, these routes are 404s). Stored in <code>DATA_DIR/bair.json</code>.</p>
+  <div class="eps">
+
+<details class="ep" id="op-getBair">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/bair</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Read the Bair Hunt list</span>
+  </summary>
+  <div class="ep-body">
+<p>Every apartment on the list. The caller sends the PIN as <code>Authorization: Bearer &lt;pin&gt;</code>. Five wrong PINs from one address pause it for a minute, doubling up to an hour.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The list.<span class="r-sig"><a href="#schema-BairList">BairList</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">Wrong or missing PIN (<code>code: pin</code>).</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">Bair Hunt is switched off (<code>BAIR_PIN</code> unset or <code>off</code>).</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Too many wrong PINs from this address; see <code>Retry-After</code>.</span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-changeBair">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/bair</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Change one apartment, or import several</span>
+  </summary>
+  <div class="ep-body">
+<p>One change per request, so two devices editing different apartments never undo each other: <code>{&quot;op&quot;:&quot;set&quot;,&quot;item&quot;:{…}}</code> adds or replaces the apartment with that <code>id</code>, <code>{&quot;op&quot;:&quot;delete&quot;,&quot;id&quot;:&quot;…&quot;}</code> removes one, <code>{&quot;op&quot;:&quot;import&quot;,&quot;items&quot;:[…]}</code> adds or replaces several (a restored backup). Answers with the whole list after the change.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">op<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;set&quot; | &quot;delete&quot; | &quot;import&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">item</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">For <code>set</code>: an apartment, with a string <code>id</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">For <code>delete</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">items</span>
+    <span class="p-type">object[]</span>
+    <span class="p-desc">For <code>import</code>.</span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The list after the change.<span class="r-sig"><a href="#schema-BairList">BairList</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">The change is malformed, an apartment is over 32 KB, or the list would pass 2,000 apartments.</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">Wrong or missing PIN (<code>code: pin</code>).</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">Bair Hunt is switched off (<code>BAIR_PIN</code> unset or <code>off</code>).</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Too many wrong PINs from this address; see <code>Retry-After</code>.</span>
+  </div>
+    </div>
+  </div>
+</details>
+  </div>
+</section>
+
 <section class="api-sec" id="admin">
   <h2>Admin</h2>
   <p class="sub">Admin dashboard. Requires an admin session (<code>ADMIN_UIDS</code> or <code>admin:true</code>)</p>
@@ -3165,6 +3266,34 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
        is <b>representative, not enforced</b>: the server stores it opaquely and the app
        grows it over time.</p>
     <div class="eps">
+
+<details class="ep sch" id="schema-BairList">
+  <summary>
+    <span class="sch-name"><code>BairList</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">items</span>
+    <span class="p-type">object[]</span>
+    <span class="p-desc">The apartments, each an object with a string <code>id</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">rev</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Goes up by one with every saved change.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">updatedAt</span>
+    <span class="p-type">string | null <span class="p-hint">(date-time)</span></span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
 
 <details class="ep sch" id="schema-Error">
   <summary>

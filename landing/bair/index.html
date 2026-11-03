@@ -368,28 +368,35 @@ button, select, input, textarea { font: inherit; color: inherit; }
   <form id="gateForm" autocomplete="off">
     <h1>Bair Hunt</h1>
     <p>Хувийн хуудас. ПИН кодоо оруулна уу.</p>
-    <input id="pin" type="password" inputmode="numeric" maxlength="8" aria-label="ПИН код" autofocus>
-    <button class="btn cta" type="submit">Нээх</button>
+    <input id="pin" type="password" inputmode="numeric" maxlength="32" aria-label="ПИН код" autofocus>
+    <button class="btn cta" type="submit" id="pinGo">Нээх</button>
     <div class="err" id="gateErr" aria-live="polite"></div>
   </form>
 </div>
 <script>
-// A privacy curtain, not security: the page is static and the list lives in this browser.
+window.BAIR_API = "https://fitness.tagent.space/api/bair";
+// The server checks the PIN (GET /api/bair answers 401 to a wrong one), so the page holds no
+// copy of it. A device that got in once keeps its PIN and opens straight away; if the PIN is
+// changed later, the next server call answers 401 and the page clears it and asks again.
 (function () {
-  var H = "a2be3213e1e7041cd2e0a0a3a9e02226e92932feced74f26f973548252a1a4d0", KEY = "bairhunt.unlocked";
-  var gate = document.getElementById("gate");
-  function open() { gate.remove(); try { localStorage.setItem(KEY, H); } catch (e) {} }
-  try { if (localStorage.getItem(KEY) === H) { open(); return; } } catch (e) {}
-  function sha(t) { return crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)).then(function (b) { return Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, "0"); }).join(""); }); }
+  var gate = document.getElementById("gate"), err = document.getElementById("gateErr");
+  var saved = null; try { saved = localStorage.getItem("bairhunt.pin"); } catch (e) {}
+  if (saved) { gate.remove(); return; }
   document.getElementById("gateForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    var el = document.getElementById("pin"), v = el.value.trim();
-    if (!v) { document.getElementById("gateErr").textContent = "ПИН кодоо оруулна уу."; return; }
-    sha(v).then(function (h) { if (h === H) open(); else { document.getElementById("gateErr").textContent = "Буруу код. Дахин оролдоно уу."; el.value = ""; el.focus(); } });
+    var el = document.getElementById("pin"), v = el.value.trim(), btn = document.getElementById("pinGo");
+    if (!v) { err.textContent = "ПИН кодоо оруулна уу."; return; }
+    btn.disabled = true; err.textContent = "";
+    fetch(window.BAIR_API, { headers: { Authorization: "Bearer " + v }, cache: "no-store" }).then(function (r) {
+      btn.disabled = false;
+      if (r.ok) { try { localStorage.setItem("bairhunt.pin", v); } catch (e2) {} location.reload(); return; }
+      if (r.status === 429) { var s = +(r.headers.get("Retry-After") || 60); err.textContent = "Хэт олон буруу оролдлого. " + Math.ceil(s / 60) + " минутын дараа дахин оролдоно уу."; return; }
+      if (r.status === 401) { err.textContent = "Буруу код. Дахин оролдоно уу."; el.value = ""; el.focus(); return; }
+      err.textContent = "Сервер хариу өгсөнгүй (" + r.status + "). Түр хүлээгээд дахин оролдоно уу.";
+    }, function () { btn.disabled = false; err.textContent = "Сервертэй холбогдож чадсангүй. Интернэтээ шалгана уу."; });
   });
 })();
 </script>
-<script>window.BAIR_LOCAL = true;</script>
 <header class="appbar">
   <div class="appbar-in gutter">
     <div class="brand"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>Bair Hunt</div>
@@ -457,7 +464,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 
   <section class="section" id="backupSec" hidden>
     <div class="panel" style="display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between">
-      <div><h3 style="font-size:16px">Нөөц</h3><p style="margin:4px 0 0;color:var(--muted);font-size:14px">Жагсаалт энэ төхөөрөмжийн хөтөч дээр хадгалагддаг. Өөр төхөөрөмж рүү шилжүүлэх эсвэл хадгалж үлдэхийн тулд нөөц файл татаарай.</p></div>
+      <div><h3 style="font-size:16px">Нөөц</h3><p id="backupText" style="margin:4px 0 0;color:var(--muted);font-size:14px">Жагсаалт энэ төхөөрөмжийн хөтөч дээр хадгалагддаг. Өөр төхөөрөмж рүү шилжүүлэх эсвэл хадгалж үлдэхийн тулд нөөц файл татаарай.</p></div>
       <span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" type="button" data-export>Нөөц татах</button><label class="btn small" for="importFile">Нөөцөөс сэргээх</label><input type="file" id="importFile" accept="application/json,.json" hidden></span>
     </div>
   </section>
@@ -1111,7 +1118,8 @@ button, select, input, textarea { font: inherit; color: inherit; }
     const patch = { lat: +lat.toFixed(6), lng: +lng.toFixed(6), updatedAt: new Date().toISOString() };
     if (!it.district) { const dn = districtAt(lat, lng); if (dn) patch.district = dn; }
     try {
-      if (memoryOnly) { Object.assign(it, patch); persistLocal(); render(); } else await col.doc(id).update(patch);
+      if (serverMode) setItems((await api("POST", { op: "set", item: { ...it, ...patch } })).items);
+      else if (memoryOnly) { Object.assign(it, patch); persistLocal(); render(); } else await col.doc(id).update(patch);
       toast("Тэмдэглэлээ: " + shortName(it.name)); selId = id; openPop(id);
     } catch (e) { toast("Тэмдгийг хадгалж чадсангүй. Дахин оролдоно уу."); }
   }
@@ -1232,11 +1240,13 @@ button, select, input, textarea { font: inherit; color: inherit; }
     $("saveBtn").disabled = true;
     try {
       let id = editingId;
-      if (memoryOnly) { id = id || "m" + Date.now(); items = [...items.filter((x) => x.id !== id), { ...body, id }]; persistLocal(); render(); }
+      if (serverMode) { id = id || "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); setItems((await api("POST", { op: "set", item: { ...body, id } })).items); }
+      else if (memoryOnly) { id = id || "m" + Date.now(); items = [...items.filter((x) => x.id !== id), { ...body, id }]; persistLocal(); render(); }
       else { const ref = editingId ? col.doc(editingId) : col.doc(); id = ref.id; await ref.set(body); }
       toast(prev ? "Хадгаллаа" : "Байр нэмэгдлээ"); closeSheet();
       if (hasLoc(body)) { selId = id; setTimeout(() => selectItem(id), 60); }
     } catch (e) {
+      if (serverMode) { showErr(e && e.offline ? "Сервертэй холбогдож чадсангүй. Интернэтээ шалгаад дахин дарна уу." : "Сервер хадгалж чадсангүй. Дахин оролдоно уу."); return; }
       showErr(e && e.code === "quota_exceeded" ? "Сан дүүрсэн байна. Хуучин байрнуудаас устгаад дахин хадгална уу." : e && e.code === "invalid_argument" ? "Танд засах эрх алга. Эзэмшигчээс эрх хүснэ үү." : "Одоохондоо хадгалж чадсангүй. Холболтоо шалгаад дахин дарна уу.");
     } finally { $("saveBtn").disabled = false; }
   }
@@ -1246,7 +1256,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
   async function del() {
     if (!delArmed) { delArmed = true; $("delBtn").classList.add("armed"); $("delBtn").textContent = "Дахин дарж устгана"; delTimer = setTimeout(disarmDelete, 4000); return; }
     const id = editingId;
-    try { if (memoryOnly) { items = items.filter((x) => x.id !== id); persistLocal(); render(); } else await col.doc(id).delete(); toast("Устгалаа"); if (selId === id) { selId = null; mainMap.setPop(null); } closeSheet(); }
+    try { if (serverMode) setItems((await api("POST", { op: "delete", id })).items); else if (memoryOnly) { items = items.filter((x) => x.id !== id); persistLocal(); render(); } else await col.doc(id).delete(); toast("Устгалаа"); if (selId === id) { selId = null; mainMap.setPop(null); } closeSheet(); }
     catch (e) { showErr("Устгаж чадсангүй. Дахин оролдоно уу."); }
   }
   let toastT = null;
@@ -1311,13 +1321,64 @@ button, select, input, textarea { font: inherit; color: inherit; }
       const data = JSON.parse(await f.text()); const list = Array.isArray(data) ? data : data.apartments;
       if (!Array.isArray(list)) throw new Error("shape");
       const clean = list.filter((x) => x && typeof x === "object" && typeof x.id === "string" && x.id);
-      const byId = new Map(items.map((x) => [x.id, x])); for (const x of clean) byId.set(x.id, x);
-      items = [...byId.values()]; persistLocal(); didFit = false; render(); toast(`${clean.length} байр сэргээлээ`);
+      if (serverMode) { setItems((await api("POST", { op: "import", items: clean })).items); didFit = false; render(); }
+      else { const byId = new Map(items.map((x) => [x.id, x])); for (const x of clean) byId.set(x.id, x); items = [...byId.values()]; persistLocal(); didFit = false; render(); }
+      toast(`${clean.length} байр сэргээлээ`);
     } catch (e) { toast("Энэ файл Bair Hunt-ийн нөөц биш байна."); }
   });
+  // Shared list on the owner's server (window.BAIR_API, the Fitness api on Railway). The PIN the
+  // gate checked is the credential; the last list seen is kept in this browser so the page opens
+  // instantly and still shows something when the server can't be reached.
+  const API = window.BAIR_API || null;
+  let serverMode = false, syncing = false;
+  async function api(method, body) {
+    const pin = ls.get("bairhunt.pin") || "";
+    if (!pin) throw Object.assign(new Error("no pin"), { nopin: true });
+    let r;
+    try { r = await fetch(API, { method, cache: "no-store", headers: { Authorization: "Bearer " + pin, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined }); }
+    catch (e) { throw Object.assign(new Error("offline"), { offline: true }); }
+    // The PIN was changed on the server: forget it and show the PIN screen again (once; with no
+    // PIN stored the page never calls the server, so this cannot loop).
+    if (r.status === 401) { try { localStorage.removeItem("bairhunt.pin"); } catch (e) {} location.reload(); throw Object.assign(new Error("pin"), { nopin: true }); }
+    if (!r.ok) throw Object.assign(new Error("http " + r.status), { status: r.status });
+    return r.json();
+  }
+  function setItems(list) { items = Array.isArray(list) ? list : []; try { localStorage.setItem(LS_KEY, JSON.stringify(items)); } catch (e) {} render(); }
+  async function sync() {
+    if (syncing) return; syncing = true;
+    try {
+      let out = await api("GET");
+      if (ls.get("bairhunt.migrated") !== "1") {
+        // Apartments this browser saved before the list moved to the server go up once.
+        let local = []; try { local = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch (e) {}
+        const have = new Set(out.items.map((x) => x.id));
+        const missing = (Array.isArray(local) ? local : []).filter((x) => x && typeof x.id === "string" && !have.has(x.id));
+        if (missing.length) { out = await api("POST", { op: "import", items: missing }); toast(`Энэ төхөөрөмж дээрх ${missing.length} байрыг сервер рүү хууллаа`); }
+        ls.set("bairhunt.migrated", "1");
+      }
+      $("notice").hidden = true;
+      setItems(out.items);
+    } catch (e) {
+      if (!e.offline && !e.status) return;
+      $("notice").textContent = "Сервертэй холбогдож чадсангүй. Сүүлд хадгалсан хуулбарыг харуулж байна, өөрчлөлт хадгалагдахгүй.";
+      $("notice").hidden = false;
+    } finally { syncing = false; }
+  }
+  function goServer() {
+    serverMode = true;
+    if (!ls.get("bairhunt.pin")) return; // the PIN screen is up; it reloads the page once the PIN is right
+    try { const a = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); if (Array.isArray(a)) items = a; } catch (e) {}
+    $("backupSec").hidden = false;
+    $("backupText").textContent = "Жагсаалт таны сервер (Railway) дээр хадгалагдаж, утас, компьютер бүр дээр ижил харагдана. Нэмэлт хамгаалалт болгож нөөц файл татаж болно.";
+    render(); sync();
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) sync(); });
+    setInterval(() => { if (!document.hidden && $("sheet").hidden) sync(); }, 60000);
+  }
+
   async function connect() {
     const timer = setTimeout(() => { if (!items.length && !memoryOnly) { $("notice").textContent = "Хадгалсан байрнуудтай холбогдож байна. Удахгүй гарч ирнэ."; $("notice").hidden = false; } }, 10000);
     db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db && API) { clearTimeout(timer); goServer(); return; }
     if (!db && window.BAIR_LOCAL) { clearTimeout(timer); goLocal(); return; }
     if (!db) { clearTimeout(timer); goMemory("Хадгалахын тулд claude.ai-д нэвтэрнэ үү. Одоо нэмсэн зүйлс хуудсыг хаахад устна."); return; }
     col = db.collection("apartments");

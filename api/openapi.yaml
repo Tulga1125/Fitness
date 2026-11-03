@@ -153,6 +153,10 @@ tags:
       attached to a logged workout. Stored per profile (one quota for both) and named
       by the SHA-256 of its bytes; the state only carries a `MediaRef`. Every route here is a
       404 when the instance runs with `MEDIA_UPLOADS=0`.
+  - name: bair
+    description: >-
+      Bair Hunt, the apartment-search log at tagent.space/bair/: one shared list behind a PIN
+      (the `BAIR_PIN` environment variable; unset or `off`, these routes are 404s). Stored in `DATA_DIR/bair.json`.
   - name: coach
     description: >-
       AI Coach: plans, reviews and debriefs. Every route here answers 503 unless the
@@ -163,6 +167,66 @@ security:
   - bearerAuth: []
 
 paths:
+  /api/bair:
+    get:
+      tags: [bair]
+      operationId: getBair
+      summary: Read the Bair Hunt list
+      description: |
+        Every apartment on the list. The caller sends the PIN as `Authorization: Bearer <pin>`.
+        Five wrong PINs from one address pause it for a minute, doubling up to an hour.
+      security:
+        - bairPin: []
+      responses:
+        '200':
+          description: The list.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BairList' }
+        '401':
+          description: 'Wrong or missing PIN (`code: pin`).'
+        '404':
+          description: Bair Hunt is switched off (`BAIR_PIN` unset or `off`).
+        '429':
+          description: Too many wrong PINs from this address; see `Retry-After`.
+    post:
+      tags: [bair]
+      operationId: changeBair
+      summary: Change one apartment, or import several
+      description: |
+        One change per request, so two devices editing different apartments never undo each
+        other: `{"op":"set","item":{…}}` adds or replaces the apartment with that `id`,
+        `{"op":"delete","id":"…"}` removes one, `{"op":"import","items":[…]}` adds or replaces
+        several (a restored backup). Answers with the whole list after the change.
+      security:
+        - bairPin: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [op]
+              properties:
+                op: { type: string, enum: [set, delete, import] }
+                item: { type: object, description: 'For `set`: an apartment, with a string `id`.' }
+                id: { type: string, description: For `delete`. }
+                items: { type: array, items: { type: object }, description: For `import`. }
+      responses:
+        '200':
+          description: The list after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BairList' }
+        '400':
+          description: The change is malformed, an apartment is over 32 KB, or the list would pass 2,000 apartments.
+        '401':
+          description: 'Wrong or missing PIN (`code: pin`).'
+        '404':
+          description: Bair Hunt is switched off (`BAIR_PIN` unset or `off`).
+        '429':
+          description: Too many wrong PINs from this address; see `Retry-After`.
+
   /api/health:
     get:
       tags: [meta]
@@ -2955,6 +3019,12 @@ paths:
 
 components:
   securitySchemes:
+    bairPin:
+      type: http
+      scheme: bearer
+      description: >-
+        Bair Hunt's PIN as `Authorization: Bearer <pin>`. Only the `/api/bair` routes read it;
+        it is not a session.
     cookieAuth:
       type: apiKey
       in: cookie
@@ -3099,6 +3169,12 @@ components:
           example: { error: "that code is wrong, used or expired", code: "link-invalid" }
 
   schemas:
+    BairList:
+      type: object
+      properties:
+        items: { type: array, items: { type: object }, description: 'The apartments, each an object with a string `id`.' }
+        rev: { type: integer, description: Goes up by one with every saved change. }
+        updatedAt: { type: [string, 'null'], format: date-time }
     Error:
       type: object
       required: [error]

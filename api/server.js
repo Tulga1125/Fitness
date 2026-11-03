@@ -34,6 +34,7 @@ import { createMediaStore, mediaLimits, mediaConfig, MediaError, HASH_RE } from 
 import { effectiveRoutineId } from './queue.js';
 import { stampPut } from './sync-stamps.js';
 import { atomicWrite as durableWrite } from './durable.js';
+import { createBairStore, pinMatches } from './bair.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -938,6 +939,9 @@ if (AUDIT_ON) {
 // per-name pause is what still protects each password.
 const AUTH_BURST = createWindow({ max: 60, windowMs: 60000 });
 const ADDR_FAILS = createBackoff({ free: 20, baseMs: 30000, maxMs: 15 * 60000, forgetMs: 3600000 });
+// Bair Hunt's PIN is a few digits, so it gets far fewer free guesses than a password and a much
+// longer pause: five, then a minute doubling up to an hour, forgotten after a day.
+const BAIR_FAILS = createBackoff({ free: 5, baseMs: 60000, maxMs: 60 * 60000, forgetMs: 24 * 3600000 });
 const ACCOUNT_FAILS = createBackoff({
   free: 5, baseMs: 60000, maxMs: 3600000, forgetMs: 24 * 3600000,
   // At most one per profile with a password, so this cannot grow without bound.
@@ -983,6 +987,25 @@ function limitAddress(req) {
   }
   return /^\d{1,3}(\.\d{1,3}){3}$/.test(raw) ? raw : 'unknown';
 }
+/* ---------- Bair Hunt ---------- */
+// The PIN comes only from the environment (a Railway variable), never from this public source.
+// Unset, empty or `off`, the routes answer 404.
+const BAIR_PIN = String(process.env.BAIR_PIN || '').trim();
+const BAIR_ON = !!BAIR_PIN && BAIR_PIN.toLowerCase() !== 'off';
+let bairStoreInstance = null;
+const bairStore = () => (bairStoreInstance ||= createBairStore({ dir: DATA, write: atomicWrite }));
+// Answers the request itself (404, 429 or 401) and returns false unless the PIN is right.
+function bairAuth(req, res) {
+  if (!BAIR_ON) { json(res, 404, { error: 'not found' }); return false; }
+  const key = 'bair|' + limitAddress(req);
+  const wait = BAIR_FAILS.retryAfter(key);
+  if (wait) { tooMany(res, wait); return false; }
+  if (pinMatches(req.headers.authorization, BAIR_PIN)) return true;
+  BAIR_FAILS.fail(key);
+  json(res, 401, { error: 'wrong PIN', code: 'pin' });
+  return false;
+}
+
 function tooMany(res, secs) {
   json(res, 429, { error: 'too many attempts, try again later', code: 'locked', retryAfter: secs }, { 'Retry-After': String(secs) });
 }
@@ -1908,6 +1931,18 @@ const routes = {
   // 503 rather than a flag in a 200: the container healthcheck is `wget --spider`, which reads
   // the status and nothing else, and an instance that cannot write its data directory is exactly
   // what "unhealthy" is for. The 200 keeps the shape it had, plus the flag it is now asserting.
+  // Bair Hunt (bair.js): one shared apartment list behind a PIN, for tagent.space/bair/.
+  'GET /api/bair': async (req, res) => {
+    if (!bairAuth(req, res)) return;
+    json(res, 200, bairStore().view());
+  },
+  'POST /api/bair': async (req, res) => {
+    if (!bairAuth(req, res)) return;
+    const out = bairStore().apply(await readBody(req));
+    if (out.error) return json(res, 400, { error: out.error });
+    json(res, 200, out);
+  },
+
   'GET /api/health': async (req, res) => {
     if (!dataWritable()) return json(res, 503, { ok: false, writable: false });
     json(res, 200, { ok: true, users: db.users.length, writable: true });
