@@ -223,6 +223,11 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
 .ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
 .tick { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 13.5px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; }
 .tick select { border: 1px solid var(--line); border-radius: 6px; background: var(--bg); padding: 3px 4px; font-size: 13px; }
+.hint-line { margin: 0; font-size: 13px; color: var(--muted); }
+.hint-line:empty { display: none; }
+.garage { font-size: 13.5px; line-height: 1.5; }
+.garage > span:first-child { margin-right: 8px; }
+.garage .over { color: var(--bad); font-weight: 600; } .garage .under { color: var(--good); font-weight: 600; }
 .calc { background: var(--sunk); border-radius: 8px; padding: 10px 12px; font-size: 13.5px; display: flex; gap: 6px 18px; flex-wrap: wrap; }
 .calc b { font-family: var(--f-mono); font-weight: 500; }
 .err { color: var(--bad); font-size: 13.5px; }
@@ -429,6 +434,26 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
     </fieldset>
 
     <fieldset>
+      <legend>Garage</legend>
+      <div class="row">
+        <label class="field"><span>Garage or parking</span><select id="f_gType"></select></label>
+        <label class="field" id="w_gDeal"><span>How it's sold</span><select id="f_gDeal"></select></label>
+      </div>
+      <div class="row" id="w_gMoney">
+        <label class="field" id="w_gPrice"><span>Garage asking price</span><em>million ₮</em><input id="f_gPrice" type="number" inputmode="decimal" min="0" step="0.5" placeholder="30"></label>
+        <label class="field" id="w_gValue"><span>Your valuation</span><em>million ₮, what it's really worth</em><input id="f_gValue" type="number" inputmode="decimal" min="0" step="0.5" placeholder="25"></label>
+        <label class="field" id="w_gRent"><span>Monthly rent</span><em>thousand ₮</em><input id="f_gRent" type="number" inputmode="decimal" min="0" step="5" placeholder="150"></label>
+      </div>
+      <div class="row" id="w_gMore">
+        <label class="field"><span>Heated</span><select id="f_gHeated"><option value="">?</option><option value="y">Yes</option><option value="n">No</option></select></label>
+        <label class="field"><span>Own certificate</span><select id="f_gCert"><option value="">?</option><option value="y">Yes</option><option value="n">No</option></select></label>
+        <label class="field"><span>Walk to flat</span><em>minutes</em><input id="f_gWalk" type="number" min="0" step="1" placeholder="0"></label>
+      </div>
+      <label class="field" id="w_gNotes"><span>Garage notes</span><input id="f_gNotes" placeholder="e.g. spot B-14, fits an SUV, gate code"></label>
+      <p class="hint-line" id="gHint"></p>
+    </fieldset>
+
+    <fieldset>
       <legend>Interior</legend>
       <div class="seg reno-seg" id="f_reno"></div>
       <label class="field"><span>Renovation estimate</span><em>million ₮. Rough guide: cosmetic 3–8, kitchen or bath 10–25, full 30+ for a 2-room</em><input id="f_renoCost" type="number" inputmode="decimal" min="0" step="0.5" placeholder="0"></label>
@@ -499,6 +524,9 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
     { k: "shell", label: "Bare shell", short: "Bare shell", lvl: 4 },
   ];
   const RENO_BY = Object.fromEntries(RENO.map((r) => [r.k, r]));
+  const GTYPES = [["", "No garage"], ["underground", "Underground parking spot"], ["box", "Garage box (separate building)"], ["outdoor", "Assigned outdoor spot"]];
+  const GTYPE_LABEL = Object.fromEntries(GTYPES);
+  const GDEALS = [["included", "Included in the price"], ["separate", "Sold separately"], ["rent", "Rented monthly"]];
   const RATES = [
     { k: "conv", label: "Convenience", hint: "Commute, shops, school, kindergarten, traffic" },
     { k: "rel", label: "Reliability", hint: "Construction, developer record, paperwork, heating" },
@@ -509,7 +537,6 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
     ["mortgage", "Mortgage eligible (6% / 8%)"],
     ["heating", "Central heating & hot water"],
     ["elevator", "Elevator works"],
-    ["parking", "Parking or garage"],
     ["storage", "Storage unit"],
     ["school", "School / kindergarten in walking distance"],
     ["bus", "Bus stop within 5 minutes"],
@@ -534,15 +561,22 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
   const n = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? x : null; };
   function derive(it) {
     const price = n(it.price), m2 = n(it.m2), reno = n(it.renoCost) || 0;
-    const allin = price != null ? price + reno : null;
-    const perM2 = price != null && m2 ? price / m2 : null;
-    const allinM2 = allin != null && m2 ? allin / m2 : null;
+    // Garage: when it comes with the flat, its value is taken out of the flat's ₮/m²;
+    // when it is sold separately, its price is added to the all-in total.
+    const gDeal = it.gType ? (it.gDeal || "included") : "";
+    const gValue = n(it.gValue), gPrice = n(it.gPrice);
+    const garageIn = gDeal === "included" && gValue ? gValue : 0;
+    const garageAdd = gDeal === "separate" ? (gPrice ?? gValue ?? 0) : 0;
+    const flat = price != null ? Math.max(price - garageIn, 0) : null;
+    const allin = price != null ? price + reno + garageAdd : null;
+    const perM2 = flat != null && m2 ? flat / m2 : null;
+    const allinM2 = flat != null && m2 ? (flat + reno) / m2 : null;
     const cond = it.reno ? 5 - RENO_BY[it.reno].lvl : null;
     const parts = [["conv", n(it.conv)], ["rel", n(it.rel)], ["live", n(it.live)], ["cond", cond]];
     let sw = 0, s = 0;
     for (const [k, v] of parts) if (v != null && weights[k] > 0) { sw += weights[k]; s += v * weights[k]; }
     const score = sw ? (s / sw) * 2 : null; // out of 10
-    return { price, m2, reno, allin, perM2, allinM2, score };
+    return { price, m2, reno, allin, perM2, allinM2, score, gDeal, gValue, gPrice, garageIn, garageAdd };
   }
   const fmtM = (v) => v == null ? "–" : "₮" + (v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")) + "M";
   const fmtM2 = (v) => v == null ? "–" : "₮" + (v).toFixed(2) + "M";
@@ -649,6 +683,20 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
     list.innerHTML = `<div class="grid">${shown.map(({ it, d }) => card(it, d)).join("")}</div>`;
   }
 
+  function garageLine(it, d) {
+    if (!it.gType) return "";
+    const bits = [`<b>${esc(GTYPE_LABEL[it.gType] || "Garage")}</b>`];
+    if (d.gDeal === "included") bits.push(d.gValue ? `included, worth ${fmtM(d.gValue)}` : "included");
+    else if (d.gDeal === "separate") {
+      bits.push(d.gPrice != null ? `sold separately for ${fmtM(d.gPrice)}` : "sold separately");
+      if (d.gPrice != null && d.gValue != null && d.gPrice !== d.gValue) bits.push(d.gPrice > d.gValue ? `<span class="over">${fmtM(d.gPrice - d.gValue)} over your value</span>` : `<span class="under">${fmtM(d.gValue - d.gPrice)} under your value</span>`);
+      else if (d.gValue != null) bits.push(`your value ${fmtM(d.gValue)}`);
+    } else if (d.gDeal === "rent") bits.push(n(it.gRent) != null ? `rented, ₮${esc(it.gRent)}k/mo` : "rented");
+    if (it.gHeated === "y") bits.push("heated"); else if (it.gHeated === "n") bits.push("unheated");
+    if (it.gCert === "y") bits.push("own certificate"); else if (it.gCert === "n") bits.push("no certificate");
+    if (n(it.gWalk) != null) bits.push(it.gWalk == 0 ? "in the building" : `${esc(it.gWalk)} min walk`);
+    return `<div class="garage"><span style="color:var(--muted)">Garage</span>${bits.join(" · ")}${it.gNotes ? ` <span style="color:var(--muted)">(${esc(it.gNotes)})</span>` : ""}</div>`;
+  }
   function card(it, d) {
     const reno = it.reno ? RENO_BY[it.reno] : null;
     const facts = [];
@@ -671,11 +719,12 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
       <div class="money">
         <div><span class="s">Asking</span><span class="v">${fmtM(d.price)}</span><span class="s">${d.perM2 != null ? fmtM2(d.perM2) + "/m²" : "&nbsp;"}</span></div>
         <div><span class="s">Renovation</span><span class="v">${d.reno ? "+" + fmtM(d.reno) : "₮0"}</span><span class="s">${reno ? esc(reno.short) : "not graded"}</span></div>
-        <div class="all"><span class="s">All-in</span><span class="v">${fmtM(d.allin)}</span><span class="s">${d.allinM2 != null ? fmtM2(d.allinM2) + "/m²" : "&nbsp;"}</span></div>
+        <div class="all"><span class="s">All-in${d.garageAdd ? " + garage" : ""}</span><span class="v">${fmtM(d.allin)}</span><span class="s">${d.allinM2 != null ? fmtM2(d.allinM2) + "/m²" : "&nbsp;"}</span></div>
       </div>
       <div class="c-body">
         <div class="bars">${bar("Convenience", it.conv)}${bar("Reliability", it.rel)}${bar("Livability", it.live)}</div>
         ${reno ? `<div class="reno"><span class="lvl" aria-hidden="true">${[1, 2, 3, 4].map((i) => `<i class="${i <= reno.lvl ? "on" : ""}"></i>`).join("")}</span><b>${esc(reno.label)}</b>${it.renoWhat ? `<span style="color:var(--muted)">${esc(it.renoWhat)}</span>` : ""}</div>` : ""}
+        ${garageLine(it, d)}
         ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
         ${checks ? `<div class="checks">${checks}</div>` : ""}
         ${it.pros || it.cons ? `<div class="pc"><div class="pro"><span class="lab">Pros</span>${lines(it.pros) || "–"}</div><div class="con"><span class="lab">Cons</span>${lines(it.cons) || "–"}</div></div>` : ""}
@@ -694,22 +743,39 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
     $("f_reno").innerHTML = RENO.map((r) => `<input type="radio" name="reno" id="reno_${r.k}" value="${r.k}"><label for="reno_${r.k}">${r.label}</label>`).join("");
     $("rates").innerHTML = RATES.map((r) => `<div class="rate"><div class="rate-top"><b>${r.label}</b><em>${r.hint}</em></div><div class="seg">${[1, 2, 3, 4, 5].map((i) => `<input type="radio" name="${r.k}" id="r_${r.k}_${i}" value="${i}"><label for="r_${r.k}_${i}">${i}</label>`).join("")}</div></div>`).join("");
     $("ticks").innerHTML = CHECKS.map(([k, l]) => `<label class="tick" for="c_${k}"><span>${l}</span><select id="c_${k}"><option value="">?</option><option value="y">Yes</option><option value="n">No</option></select></label>`).join("");
-    ["f_price", "f_area_m2", "f_renoCost"].forEach((id) => $(id).addEventListener("input", updateCalc));
+    $("f_gType").innerHTML = GTYPES.map(([k, l]) => `<option value="${k}">${l}</option>`).join("");
+    $("f_gDeal").innerHTML = GDEALS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("");
+    ["f_price", "f_area_m2", "f_renoCost", "f_gPrice", "f_gValue", "f_gRent"].forEach((id) => $(id).addEventListener("input", updateCalc));
+    ["f_gType", "f_gDeal"].forEach((id) => $(id).addEventListener("change", updateCalc));
   }
   function updateCalc() {
-    const d = derive({ price: $("f_price").value, m2: $("f_area_m2").value, renoCost: $("f_renoCost").value });
-    $("calc").innerHTML = `<span>₮/m² <b>${d.perM2 != null ? fmtM2(d.perM2) : "–"}</b></span><span>All-in <b>${fmtM(d.allin)}</b></span><span>All-in ₮/m² <b>${d.allinM2 != null ? fmtM2(d.allinM2) : "–"}</b></span>`;
+    const f = { price: $("f_price").value, m2: $("f_area_m2").value, renoCost: $("f_renoCost").value, gType: $("f_gType").value, gDeal: $("f_gDeal").value, gPrice: $("f_gPrice").value, gValue: $("f_gValue").value };
+    const d = derive(f);
+    const has = !!f.gType, deal = has ? f.gDeal : "";
+    $("w_gDeal").hidden = !has; $("w_gMoney").hidden = !has; $("w_gMore").hidden = !has; $("w_gNotes").hidden = !has;
+    $("w_gPrice").hidden = deal !== "separate"; $("w_gValue").hidden = deal === "rent"; $("w_gRent").hidden = deal !== "rent";
+    let hint = "";
+    if (deal === "included") hint = d.garageIn ? `The flat alone costs ${fmtM(d.price - d.garageIn)}; ₮/m² below leaves the garage out.` : "Add your valuation so the flat's ₮/m² leaves the garage out.";
+    else if (deal === "separate") {
+      hint = d.garageAdd ? `${fmtM(d.garageAdd)} is added to the all-in total.` : "Add the asking price to include it in the all-in total.";
+      const gp = n(f.gPrice), gv = n(f.gValue);
+      if (gp != null && gv != null && gp !== gv) hint += gp > gv ? ` Asking is ${fmtM(gp - gv)} over your valuation.` : ` Asking is ${fmtM(gv - gp)} under your valuation.`;
+    } else if (deal === "rent") hint = "Rent shows with the monthly fees; it doesn't change the purchase price.";
+    $("gHint").textContent = hint;
+    $("calc").innerHTML = `<span>Flat ₮/m² <b>${d.perM2 != null ? fmtM2(d.perM2) : "–"}</b></span><span>All-in <b>${fmtM(d.allin)}</b></span><span>All-in ₮/m² <b>${d.allinM2 != null ? fmtM2(d.allinM2) : "–"}</b></span>`;
   }
+
   const radio = (name) => { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ""; };
   const setRadio = (name, v) => { document.querySelectorAll(`input[name="${name}"]`).forEach((el) => { el.checked = String(el.value) === String(v ?? ""); }); };
 
-  const FIELDS = { name: "f_name", district: "f_district", area: "f_area", status: "f_status", visited: "f_visited", link: "f_link", contact: "f_contact", price: "f_price", m2: "f_area_m2", fees: "f_fees", renoCost: "f_renoCost", renoWhat: "f_renoWhat", rooms: "f_rooms", floor: "f_floor", floors: "f_floors", year: "f_year", build: "f_build", facing: "f_facing", pros: "f_pros", cons: "f_cons", notes: "f_notes" };
+  const FIELDS = { name: "f_name", district: "f_district", area: "f_area", status: "f_status", visited: "f_visited", link: "f_link", contact: "f_contact", price: "f_price", m2: "f_area_m2", fees: "f_fees", renoCost: "f_renoCost", renoWhat: "f_renoWhat", rooms: "f_rooms", floor: "f_floor", floors: "f_floors", year: "f_year", build: "f_build", facing: "f_facing", pros: "f_pros", cons: "f_cons", notes: "f_notes", gType: "f_gType", gDeal: "f_gDeal", gPrice: "f_gPrice", gValue: "f_gValue", gRent: "f_gRent", gHeated: "f_gHeated", gCert: "f_gCert", gWalk: "f_gWalk", gNotes: "f_gNotes" };
 
   function openSheet(id) {
     editingId = id || null;
     const it = id ? items.find((x) => x.id === id) : null;
     $("sheetTitle").textContent = it ? "Edit apartment" : "Add apartment";
     for (const [k, fid] of Object.entries(FIELDS)) $(fid).value = it ? (it[k] ?? "") : "";
+    if (!$("f_gDeal").value) $("f_gDeal").value = "included";
     if (!it) { $("f_status").value = "seen"; $("f_visited").value = new Date().toISOString().slice(0, 10); }
     setRadio("reno", it?.reno); for (const r of RATES) setRadio(r.k, it?.[r.k]);
     for (const [k] of CHECKS) $("c_" + k).value = it?.checks?.[k] || "";
@@ -728,7 +794,7 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 16px; paddi
   function readForm() {
     const o = {};
     for (const [k, fid] of Object.entries(FIELDS)) o[k] = $(fid).value.trim();
-    for (const k of ["price", "m2", "fees", "renoCost", "rooms", "floor", "floors", "year"]) o[k] = o[k] === "" ? null : n(o[k]);
+    for (const k of ["price", "m2", "fees", "renoCost", "rooms", "floor", "floors", "year", "gPrice", "gValue", "gRent", "gWalk"]) o[k] = o[k] === "" ? null : n(o[k]);
     o.reno = radio("reno") || null;
     for (const r of RATES) { const v = radio(r.k); o[r.k] = v ? Number(v) : null; }
     o.lat = pickLL ? pickLL[0] : null; o.lng = pickLL ? pickLL[1] : null;
