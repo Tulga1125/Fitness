@@ -890,6 +890,23 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
   const SAT_MAX = 190; // px per km: the imagery holds ~10 m per pixel, so zooming further only blurs
   const SAT_ATTR = 'Зураг: <a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2024</a>, EOX (Copernicus Sentinel өгөгдөл) · © OpenStreetMap';
   let layer = ls.get("bairhunt.layer") || "sat";
+  // High-resolution ArcGIS imagery (about 0.3 m a pixel over Ulaanbaatar), when the server hands
+  // out a key (window.BAIR_API mode). Drawn over the Sentinel layer, which stays underneath as the
+  // fallback while tiles load or if the key stops working.
+  let ESRI = ls.get("bairhunt.mapKey") || null;
+  const ESRI_URL = "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/";
+  const ESRI_ATTR = 'Powered by Esri · Esri, Maxar, Earthstar Geographics · © OpenStreetMap';
+  const COSLAT = Math.cos(LAT0_DEG() * Math.PI / 180);
+  function LAT0_DEG() { return 47.92; }
+  const tileLon = (x, z) => x / 2 ** z * 360 - 180;
+  const tileLat = (y, z) => { const t = Math.PI - 2 * Math.PI * y / 2 ** z; return 180 / Math.PI * Math.atan(Math.sinh(t)); };
+  const lonTile = (lon, z) => Math.floor((lon + 180) / 360 * 2 ** z);
+  const latTile = (lat, z) => { const r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z); };
+  function setMapKey(k) {
+    k = k || null; if (k === ESRI) return;
+    ESRI = k; if (k) ls.set("bairhunt.mapKey", k); else try { localStorage.removeItem("bairhunt.mapKey"); } catch (e) {}
+    allMaps.forEach((m) => { m.resetEsri(); m.applyLayer(); });
+  }
   const allMaps = [];
   const LON0 = 106.92, LAT0 = 47.92, KY = 111.32, KX = 111.32 * Math.cos(LAT0 * Math.PI / 180);
   const proj = (lon, lat) => [(lon - LON0) * KX, -(lat - LAT0) * KY];
@@ -914,7 +931,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     constructor(host, opts) {
       this.host = host; this.opts = opts || {}; this.pins = []; this.pick = null; this.me = null; this.popId = null; this.selId = null;
       this.w = 0; this.h = 0; this.cx = 0; this.cy = 0; this.s = 20; this.pending = DEFAULT_BOX;
-      host.insertAdjacentHTML("beforeend", `<svg class="map-svg" tabindex="0" role="application" aria-label="Улаанбаатарын газрын зураг. Чирж хөдөлгөнө, хуруугаараа эсвэл хулганы дугуйгаар томруулна."><rect class="m-bg" width="100%" height="100%"/><g class="m-world"><g class="m-sat">${imgTag(SAT.low, "sat-low")}<g class="sat-hi"></g></g>${WORLD}</g><g class="m-ov"></g></svg>
+      host.insertAdjacentHTML("beforeend", `<svg class="map-svg" tabindex="0" role="application" aria-label="Улаанбаатарын газрын зураг. Чирж хөдөлгөнө, хуруугаараа эсвэл хулганы дугуйгаар томруулна."><rect class="m-bg" width="100%" height="100%"/><g class="m-world"><g class="m-sat">${imgTag(SAT.low, "sat-low")}<g class="sat-hi"></g><g class="esri"></g></g>${WORLD}</g><g class="m-ov"></g></svg>
         <div class="map-ctl"><button type="button" class="map-btn" data-z="in" aria-label="Томруулах">+</button><button type="button" class="map-btn" data-z="out" aria-label="Жижигрүүлэх">−</button><button type="button" class="map-btn" data-z="me" aria-label="Миний байршил"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2350d2" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>${this.opts.fitButton ? '<button type="button" class="map-btn" data-z="fit" aria-label="Бүх тэмдгийг харуулах" title="Бүх тэмдгийг харуулах"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>' : ""}</div>
         <div class="map-banner" hidden></div><div class="map-hint" hidden></div><div class="map-pop" hidden></div>
         <div class="map-foot"><div class="layer-sw" role="group" aria-label="Зургийн төрөл"><button type="button" data-layer="sat">Хиймэл дагуул</button><button type="button" data-layer="map">Гудамж</button></div><div class="scale"><i></i><span></span></div></div>
@@ -923,6 +940,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
       this.popEl = host.querySelector(".map-pop"); this.bannerEl = host.querySelector(".map-banner"); this.hintEl = host.querySelector(".map-hint");
       this.scaleBar = host.querySelector(".scale i"); this.scaleTxt = host.querySelector(".scale span"); this.zin = host.querySelector('[data-z="in"]');
       this.hiDone = new Set(); this.hiG = host.querySelector(".sat-hi");
+      this.esriG = host.querySelector(".esri"); this.esriZ = []; this.attrEl = host.querySelector(".map-attr");
       host.querySelector(".layer-sw").addEventListener("click", (e) => { const b = e.target.closest("[data-layer]"); if (b) setLayer(b.dataset.layer); });
       this.hintEl.addEventListener("click", (e) => { if (e.target.closest("[data-to-map]")) { setLayer("map"); this.zoomAt(this.w / 2, this.h / 2, this.s * 1.7); } });
       host.querySelector(".map-ctl").addEventListener("click", (e) => {
@@ -935,7 +953,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
       new ResizeObserver(() => this.resize()).observe(host);
       this.bindPointer();
     }
-    maxS() { return layer === "sat" ? SAT_MAX : 600; }
+    maxS() { return layer === "sat" ? (ESRI ? 2600 : SAT_MAX) : 600; }
     clampS(s) { return Math.max(2.5, Math.min(this.maxS(), s)); }
     resize() {
       const r = this.host.getBoundingClientRect(); if (!r.width || !r.height) return;
@@ -960,7 +978,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     toScreen(lng, lat) { const [x, y] = proj(lng, lat); return [(x - this.cx) * this.s + this.w / 2, (y - this.cy) * this.s + this.h / 2]; }
     fromScreen(px, py) { return unproj((px - this.w / 2) / this.s + this.cx, (py - this.h / 2) / this.s + this.cy); }
     zoomAt(px, py, ns) {
-      if (ns > this.maxS() && this.s >= this.maxS() - 0.01 && layer === "sat") this.showHint();
+      if (ns > this.maxS() && this.s >= this.maxS() - 0.01 && layer === "sat" && !ESRI) this.showHint();
       ns = this.clampS(ns);
       const wx = (px - this.w / 2) / this.s + this.cx, wy = (py - this.h / 2) / this.s + this.cy;
       this.s = ns; this.cx = wx - (px - this.w / 2) / ns; this.cy = wy - (py - this.h / 2) / ns;
@@ -1015,11 +1033,41 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     applyLayer() {
       this.host.classList.toggle("sat", layer === "sat");
       this.host.querySelectorAll("[data-layer]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.layer === layer)));
-      if (layer === "sat" && this.s > SAT_MAX) this.s = SAT_MAX;
+      if (this.s > this.maxS()) this.s = this.maxS();
+      this.attrEl.innerHTML = layer === "sat" && ESRI ? ESRI_ATTR : SAT_ATTR;
       if (layer !== "sat") this.hintEl.hidden = true;
       this.render();
     }
+    resetEsri() { this.esriG.innerHTML = ""; this.esriZ = []; }
+    loadEsri() {
+      if (!ESRI || layer !== "sat" || !this.w) return;
+      // The zoom whose pixels best match the screen: a tile pixel is 156543·cos(lat)/2^z metres.
+      const z = Math.max(10, Math.min(19, Math.round(Math.log2(156543.03 * COSLAT * this.s / 1000))));
+      const [l1, t1] = this.fromScreen(-64, -64), [l2, t2] = this.fromScreen(this.w + 64, this.h + 64);
+      const x0 = lonTile(l1, z), x1 = lonTile(l2, z), y0 = latTile(t1, z), y1 = latTile(t2, z);
+      if ((x1 - x0 + 1) * (y1 - y0 + 1) > 140) return;
+      let g = this.esriZ.find((e) => e.z === z);
+      if (!g) {
+        g = { z, el: document.createElementNS("http://www.w3.org/2000/svg", "g"), keys: new Set() };
+        this.esriZ.push(g);
+        while (this.esriZ.length > 3) this.esriZ.shift().el.remove();
+      }
+      if (this.esriG.lastChild !== g.el) this.esriG.appendChild(g.el); // the current zoom draws on top
+      const tok = encodeURIComponent(ESRI);
+      for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
+        const k = x + "/" + y; if (g.keys.has(k)) continue; g.keys.add(k);
+        const [ax, ay] = proj(tileLon(x, z), tileLat(y, z)), [bx, by] = proj(tileLon(x + 1, z), tileLat(y + 1, z));
+        const im = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        im.setAttribute("x", ax.toFixed(5)); im.setAttribute("y", ay.toFixed(5));
+        im.setAttribute("width", (bx - ax).toFixed(5)); im.setAttribute("height", (by - ay).toFixed(5));
+        im.setAttribute("preserveAspectRatio", "none");
+        im.addEventListener("error", () => im.remove());
+        im.setAttribute("href", `${ESRI_URL}${z}/${y}/${x}?token=${tok}`);
+        g.el.appendChild(im);
+      }
+    }
     loadHi() {
+      if (ESRI && layer === "sat") return;
       if (layer !== "sat" || this.s < 28 || this.hiDone.size === SAT.tiles.length) return;
       const [l1, t1] = this.fromScreen(-100, -100), [l2, t2] = this.fromScreen(this.w + 100, this.h + 100);
       for (const t of SAT.tiles) {
@@ -1035,7 +1083,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     setBanner(html) { if (html) { this.bannerEl.innerHTML = html; this.bannerEl.hidden = false; } else this.bannerEl.hidden = true; this.svg.classList.toggle("placing", !!html); }
     render() {
       if (!this.w) return;
-      this.loadHi();
+      this.loadHi(); this.loadEsri();
       this.world.setAttribute("transform", `translate(${this.w / 2 - this.cx * this.s} ${this.h / 2 - this.cy * this.s}) scale(${this.s})`);
       this.zin.disabled = this.s >= this.maxS() - 0.01 && layer !== "sat";
       const km = niceKm(90 / this.s); this.scaleBar.style.width = Math.round(km * this.s) + "px";
@@ -1357,6 +1405,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
         ls.set("bairhunt.migrated", "1");
       }
       $("notice").hidden = true;
+      setMapKey(out.mapKey || null);
       setItems(out.items);
     } catch (e) {
       if (!e.offline && !e.status) return;

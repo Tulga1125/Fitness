@@ -1934,7 +1934,10 @@ const routes = {
   // Bair Hunt (bair.js): one shared apartment list behind a PIN, for tagent.space/bair/.
   'GET /api/bair': async (req, res) => {
     if (!bairAuth(req, res)) return;
-    json(res, 200, bairStore().view());
+    // The ArcGIS key for the page's satellite tiles, handed only to someone with the PIN and kept
+    // out of the (public) source the same way the PIN is.
+    const mapKey = String(process.env.BAIR_MAP_KEY || '').trim();
+    json(res, 200, { ...bairStore().view(), ...(mapKey ? { mapKey } : {}) });
   },
   'POST /api/bair': async (req, res) => {
     if (!bairAuth(req, res)) return;

@@ -62,6 +62,17 @@ test('set, delete and import change one thing at a time and persist across a res
   assert.deepEqual(r.body.items.map(i => i.name).sort(), ['Two, edited', 'Ривер']);
 });
 
+test('the map key goes out with the list, and only to the PIN', async t => {
+  const h = await startServer(t, { env: { BAIR_MAP_KEY: 'test-map-key' } });
+  assert.equal((await h.call('GET')).body.mapKey, 'test-map-key');
+  const wrong = await h.call('GET', null, '0000');
+  assert.equal(wrong.status, 401);
+  assert.equal(wrong.body.mapKey, undefined);
+  assert.equal((await h.call('POST', { op: 'set', item: { id: 'a' } })).body.mapKey, undefined);
+  const none = await startServer(t);
+  assert.equal('mapKey' in (await none.call('GET')).body, false);
+});
+
 test('a malformed change is refused and changes nothing', async t => {
   const h = await startServer(t);
   for (const body of [{ op: 'nope' }, { op: 'set', item: { name: 'no id' } }, { op: 'set', item: { id: '../x' } }, { op: 'import', items: 'x' }, { op: 'set', item: { id: 'big', s: 'x'.repeat(40000) } }]) {
