@@ -15,6 +15,17 @@ Preview locally:
 docker build -t tagent-landing landing && docker run --rm -p 8080:8080 tagent-landing
 ```
 
+## Bair Hunt (`bair/`)
+
+`bair/index.html` is Tulga's apartment search log: every viewing graded on convenience,
+reliability and livability, renovation added to the price for an all-in cost, and pins on a
+satellite map of Ulaanbaatar (Sentinel-2 cloudless 2024 by EOX, pieces in `bair/sat/`; district
+outlines, rivers and main roads from OpenStreetMap). It sits behind a PIN screen and is marked
+`noindex`. The list is saved in the browser that uses it; the page's Download backup / Restore
+backup buttons move it between devices. The same page also runs as a claude.ai artifact, where
+it saves to the artifact's database instead; `window.BAIR_LOCAL` in this copy switches it to
+browser storage.
+
 ## Тусгал preview (`tusgal/`)
 
 `tusgal/index.html` is the private preview page for the HACK THE SYSTEM 2026 proposal: a static
