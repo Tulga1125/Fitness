@@ -1936,8 +1936,12 @@ const routes = {
     if (!bairAuth(req, res)) return;
     // The ArcGIS key for the page's satellite tiles, handed only to someone with the PIN and kept
     // out of the (public) source the same way the PIN is.
-    const mapKey = String(process.env.BAIR_MAP_KEY || '').trim();
-    json(res, 200, { ...bairStore().view(), ...(mapKey ? { mapKey } : {}) });
+    // Quotes pasted around the value, or the name ArcGIS's own docs use, are taken as meant.
+    const mapKey = String(process.env.BAIR_MAP_KEY || process.env.ARCGIS_API_KEY || '').trim().replace(/^(["'])(.*)\1$/, '$2').trim();
+    // Which deploy and service answered: tells "the variable is missing" apart from "the new code
+    // never shipped" when the map stays on the fallback imagery. Only PIN holders see it.
+    const build = { commit: String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 8) || null, service: process.env.RAILWAY_SERVICE_NAME || null, mapKey: !!mapKey };
+    json(res, 200, { ...bairStore().view(), ...(mapKey ? { mapKey } : {}), build });
   },
   'POST /api/bair': async (req, res) => {
     if (!bairAuth(req, res)) return;

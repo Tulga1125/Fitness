@@ -3177,7 +3177,14 @@ components:
         items: { type: array, items: { type: object }, description: 'The apartments, each an object with a string `id`.' }
         rev: { type: integer, description: Goes up by one with every saved change. }
         updatedAt: { type: [string, 'null'], format: date-time }
-        mapKey: { type: string, description: 'GET only, when `BAIR_MAP_KEY` is set: the ArcGIS key for satellite tiles.' }
+        mapKey: { type: string, description: 'GET only, when `BAIR_MAP_KEY` (or `ARCGIS_API_KEY`) is set: the ArcGIS key for satellite tiles.' }
+        build:
+          type: object
+          description: GET only. Which deploy answered, for telling a missing variable from code that never shipped.
+          properties:
+            commit: { type: [string, 'null'], description: First 8 characters of `RAILWAY_GIT_COMMIT_SHA`. }
+            service: { type: [string, 'null'], description: '`RAILWAY_SERVICE_NAME`.' }
+            mapKey: { type: boolean, description: Whether a map key is configured. }
     Error:
       type: object
       required: [error]

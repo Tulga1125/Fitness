@@ -3294,7 +3294,27 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow">
     <span class="p-name">mapKey</span>
     <span class="p-type">string</span>
-    <span class="p-desc">GET only, when <code>BAIR_MAP_KEY</code> is set: the ArcGIS key for satellite tiles.</span>
+    <span class="p-desc">GET only, when <code>BAIR_MAP_KEY</code> (or <code>ARCGIS_API_KEY</code>) is set: the ArcGIS key for satellite tiles.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">build</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">GET only. Which deploy answered, for telling a missing variable from code that never shipped.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">build.commit</span>
+    <span class="p-type">string | null</span>
+    <span class="p-desc">First 8 characters of <code>RAILWAY_GIT_COMMIT_SHA</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">build.service</span>
+    <span class="p-type">string | null</span>
+    <span class="p-desc"><code>RAILWAY_SERVICE_NAME</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">build.mapKey</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Whether a map key is configured.</span>
   </div>
 </div>
   </div>

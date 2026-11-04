@@ -64,7 +64,11 @@ test('set, delete and import change one thing at a time and persist across a res
 
 test('the map key goes out with the list, and only to the PIN', async t => {
   const h = await startServer(t, { env: { BAIR_MAP_KEY: 'test-map-key' } });
-  assert.equal((await h.call('GET')).body.mapKey, 'test-map-key');
+  const got = (await h.call('GET')).body;
+  assert.equal(got.mapKey, 'test-map-key');
+  assert.equal(got.build.mapKey, true);
+  const quoted = await startServer(t, { env: { BAIR_MAP_KEY: '"quoted-key"' } });
+  assert.equal((await quoted.call('GET')).body.mapKey, 'quoted-key');
   const wrong = await h.call('GET', null, '0000');
   assert.equal(wrong.status, 401);
   assert.equal(wrong.body.mapKey, undefined);
