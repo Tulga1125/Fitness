@@ -67,6 +67,10 @@ test('the map key goes out with the list, and only to the PIN', async t => {
   const got = (await h.call('GET')).body;
   assert.equal(got.mapKey, 'test-map-key');
   assert.equal(got.build.mapKey, true);
+  assert.ok(got.build.vars.includes('"BAIR_MAP_KEY"'));
+  assert.ok(!JSON.stringify(got.build).includes('test-map-key'), 'build never carries a value');
+  const spaced = await startServer(t, { env: { 'bair_map_key ': 'spaced-key' } });
+  assert.equal((await spaced.call('GET')).body.mapKey, 'spaced-key');
   const quoted = await startServer(t, { env: { BAIR_MAP_KEY: '"quoted-key"' } });
   assert.equal((await quoted.call('GET')).body.mapKey, 'quoted-key');
   const wrong = await h.call('GET', null, '0000');

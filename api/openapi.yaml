@@ -3185,6 +3185,7 @@ components:
             commit: { type: [string, 'null'], description: First 8 characters of `RAILWAY_GIT_COMMIT_SHA`. }
             service: { type: [string, 'null'], description: '`RAILWAY_SERVICE_NAME`.' }
             mapKey: { type: boolean, description: Whether a map key is configured. }
+            vars: { type: array, items: { type: string }, description: 'Names (never values) of environment variables that look meant for Bair Hunt, JSON-quoted so stray characters show.' }
     Error:
       type: object
       required: [error]

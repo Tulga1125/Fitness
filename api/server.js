@@ -1937,10 +1937,15 @@ const routes = {
     // The ArcGIS key for the page's satellite tiles, handed only to someone with the PIN and kept
     // out of the (public) source the same way the PIN is.
     // Quotes pasted around the value, or the name ArcGIS's own docs use, are taken as meant.
-    const mapKey = String(process.env.BAIR_MAP_KEY || process.env.ARCGIS_API_KEY || '').trim().replace(/^(["'])(.*)\1$/, '$2').trim();
+    // A name typed with a stray space or a different case still counts (Railway shows them alike).
+    const envName = Object.keys(process.env).find(n => ['BAIR_MAP_KEY', 'ARCGIS_API_KEY'].includes(n.trim().toUpperCase()));
+    const mapKey = String((envName && process.env[envName]) || '').trim().replace(/^(["'])(.*)\1$/, '$2').trim();
     // Which deploy and service answered: tells "the variable is missing" apart from "the new code
     // never shipped" when the map stays on the fallback imagery. Only PIN holders see it.
-    const build = { commit: String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 8) || null, service: process.env.RAILWAY_SERVICE_NAME || null, mapKey: !!mapKey };
+    // `vars` lists the NAMES (never values) of variables that look meant for this, so a name
+    // with a look-alike letter or a stray character shows up as what it really is.
+    const vars = Object.keys(process.env).filter(n => /bair|map|arcgis|esri|key/i.test(n) && !/^RAILWAY_/.test(n)).map(n => JSON.stringify(n));
+    const build = { commit: String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 8) || null, service: process.env.RAILWAY_SERVICE_NAME || null, mapKey: !!mapKey, vars };
     json(res, 200, { ...bairStore().view(), ...(mapKey ? { mapKey } : {}), build });
   },
   'POST /api/bair': async (req, res) => {
