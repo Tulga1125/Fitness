@@ -117,6 +117,13 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .row .money .a { font-family: var(--f-mono); font-weight: 500; font-size: 14px; }
 .row .money .m { font-family: var(--f-mono); color: var(--muted); }
 .row .ex { color: var(--muted); font-size: 12.5px; }
+.row .tel { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13.5px; }
+.row .tel a, .tel-link { font-family: var(--f-mono); font-weight: 500; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+.row .tel a:hover, .tel-link:hover { text-decoration: underline; }
+.row .tel .ad { font-family: var(--f-body); font-weight: 600; color: var(--muted); }
+.row .tel .nophone { color: var(--warn); font-weight: 600; }
+.ad-hint { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-top: -6px; }
+.ad-hint a { color: var(--accent); font-weight: 600; }
 .row .cmp { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
 .row .cmp input { width: 16px; height: 16px; accent-color: var(--accent); }
 .st { flex: none; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 10px; }
@@ -492,6 +499,8 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     <div class="step" data-panel="0">
       <h2 class="step-title">Хаана байна?</h2>
       <label class="field"><span>Нэр эсвэл хотхон</span><input id="f_name" required placeholder="ж: Ривер гарден, 4-р блок, 52 тоот"></label>
+      <label class="field"><span>Утасны дугаар</span><em>Хэд хэдэн дугаарыг таслалаар тусгаарлана</em><input id="f_phone" type="tel" inputmode="tel" autocomplete="off" placeholder="9911 2233"></label>
+      <div class="ad-hint" id="adHint" hidden><span>Дугаар заран дээр байгаа. Зараа нээгээд «Дугаар харах»-ыг дарж хуулна уу.</span><a id="adHintLink" href="#" target="_blank" rel="noopener">Зар нээх ↗</a></div>
       <div class="row2">
         <label class="field"><span>Дүүрэг</span><select id="f_district"></select></label>
         <label class="field"><span>Хороо / тэмдэг газар</span><input id="f_area" placeholder="ж: 11-р хороо, Зайсангийн ойролцоо"></label>
@@ -671,6 +680,13 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
   const hasLoc = (it) => !!it && Number.isFinite(it.lat) && Number.isFinite(it.lng);
   const gmaps = (it) => `https://www.google.com/maps/search/?api=1&query=${it.lat},${it.lng}`;
   const gdir = (it) => `https://www.google.com/maps/dir/?api=1&destination=${it.lat},${it.lng}`;
+  // Phone numbers as typed ("9911 2233, 8811-4455"), each with a tel: link. An 8-digit
+  // Mongolian number dials with +976 so it also works from a foreign SIM.
+  const phones = (it) => String(it?.phone || "").split(/[,;/\n]+/).map((x) => x.trim()).filter((x) => /\d{4}/.test(x));
+  const telHref = (p) => { const d = p.replace(/[^\d+]/g, ""); return "tel:" + (/^\d{8}$/.test(d) ? "+976" + d : d); };
+  const prettyTel = (p) => { const d = p.replace(/\D/g, ""); return d.length === 8 ? d.slice(0, 4) + " " + d.slice(4) : p; };
+  const telLinks = (it, cls = "tel-link") => phones(it).map((p) => `<a class="${cls}" href="${esc(telHref(p))}" data-nosel><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>${esc(prettyTel(p))}</a>`).join("");
+  const adLink = (it) => it.link && /^https?:\/\//i.test(it.link) ? it.link : "";
 
   // ---------- views ----------
   function currentView() { return location.hash === "#compare" ? "compare" : "map"; }
@@ -741,6 +757,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
         <div class="top"><span class="nm">${esc(it.name || "Нэргүй")}</span><span class="st st-${esc(it.status)}">${esc(STATUS_LABEL[it.status] || "")}</span></div>
         <span class="where">${esc([dist(it.district), it.area].filter(Boolean).join(" · ") || (hasLoc(it) ? "" : "Газрын зураг дээр тэмдэглээгүй"))}</span>
         <div class="money"><span class="a">${fmtM(d.allin)}</span>${d.allinM2 != null ? `<span class="m">${fmtM2(d.allinM2)}/м²</span>` : ""}</div>
+        <span class="tel" data-nosel>${phones(it).length ? telLinks(it) : `<span class="nophone">Дугааргүй</span>`}${adLink(it) ? `<a class="ad" href="${esc(adLink(it))}" target="_blank" rel="noopener">Зар ↗</a>` : ""}${phones(it).length ? "" : `<a class="ad" href="#" data-addphone="${esc(it.id)}">+ Дугаар</a>`}</span>
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span class="ex">${esc(extraLine(it, d))}${it.example ? " · Жишээ" : ""}</span><label class="cmp" data-nosel><input type="checkbox" data-cmp="${esc(it.id)}" ${ids.has(it.id) ? "checked" : ""}>Харьцуулах</label></div>
       </div>
       <span class="badge ${scoreClass(d.score)}" title="Нийт оноо, 10-аас">${fmtScore(d.score)}</span>
@@ -807,7 +824,8 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
         ${it.pros || it.cons ? `<div class="pc"><div class="pro"><span class="lab">Давуу</span>${esc(String(it.pros || "").trim()) || "–"}</div><div class="con"><span class="lab">Сул</span>${esc(String(it.cons || "").trim()) || "–"}</div></div>` : ""}
         ${it.notes ? `<div class="notes">${esc(String(it.notes).trim())}</div>` : ""}
       </div>
-      <div class="c-foot"><span>${it.visited ? "Үзсэн: " + esc(it.visited) : "Үзээгүй"}${it.contact ? " · " + esc(it.contact) : ""}</span><span class="acts">${link}${hasLoc(it) ? `<a href="${gdir(it)}" target="_blank" rel="noopener">Чиглэл ↗</a><button class="btn small" type="button" data-mapjump="${esc(it.id)}">Зураг дээр</button>` : `<button class="btn small" type="button" data-place="${esc(it.id)}">Зураг дээр тэмдэглэх</button>`}<button class="btn small" type="button" data-edit="${esc(it.id)}">Засах</button></span></div>
+      ${phones(it).length || it.contact ? `<div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:0 16px 12px;font-size:13.5px">${telLinks(it)}${it.contact ? `<span style="color:var(--muted)">${esc(it.contact)}</span>` : ""}</div>` : ""}
+      <div class="c-foot"><span>${it.visited ? "Үзсэн: " + esc(it.visited) : "Үзээгүй"}</span><span class="acts">${link}${hasLoc(it) ? `<a href="${gdir(it)}" target="_blank" rel="noopener">Чиглэл ↗</a><button class="btn small" type="button" data-mapjump="${esc(it.id)}">Зураг дээр</button>` : `<button class="btn small" type="button" data-place="${esc(it.id)}">Зураг дээр тэмдэглэх</button>`}<button class="btn small" type="button" data-edit="${esc(it.id)}">Засах</button></span></div>
     </article>`;
   }
 
@@ -874,6 +892,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     h += line("Давхар", I.map((it) => it.floor ? `${it.floor}${it.floors ? " / " + it.floors : ""}` : "–"));
     h += line("Он, төрөл", I.map((it) => [it.year, BUILD_LABEL[it.build] && it.build ? BUILD_LABEL[it.build] : ""].filter(Boolean).join(", ") || "–"), { dir: 1, raw: I.map((it) => n(it.year)) });
     h += line("Цонх", I.map((it) => esc(FACING_LABEL[it.facing] || "–")));
+    h += line("Утас", I.map((it) => telLinks(it) || "–"));
     h += line("Бичиг баримт", I.map((it) => { const c = it.checks || {}; return `Гэрчилгээ ${yn(c.cert)} · Ипотек ${yn(c.mortgage)}`; }));
     $("cmpBody").innerHTML = `<div class="cmp-wrap"><div class="cmp" style="grid-template-columns: 180px repeat(${N}, minmax(200px, 1fr))">${h}</div></div>`;
   }
@@ -1141,6 +1160,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     mainMap.setPop(id, `<div class="ph"><div style="min-width:0"><h4>${esc(it.name || "Нэргүй")}</h4><div class="sub">${esc([dist(it.district), it.area, n(it.m2) ? it.m2 + " м²" : "", it.rooms ? it.rooms + " өрөө" : ""].filter(Boolean).join(" · "))}</div></div><span class="badge ${scoreClass(d.score)}">${fmtScore(d.score)}</span></div>
       <div class="trio"><div><small>Үнэ</small><b>${fmtM(d.price)}</b></div><div><small>Засвар</small><b>${d.reno ? "+" + fmtM(d.reno) : "0"}</b></div><div class="all"><small>Нийт</small><b>${fmtM(d.allin)}</b></div></div>
       ${garageLine(it, d)}
+      ${phones(it).length ? `<div class="acts">${phones(it).map((p) => `<a class="btn small cta" href="${esc(telHref(p))}" style="min-height:40px">Залгах ${esc(prettyTel(p))}</a>`).join("")}</div>` : `<div class="acts"><button class="btn small" type="button" data-addphone="${esc(id)}">+ Утасны дугаар нэмэх</button>${adLink(it) ? `<a class="btn small" href="${esc(adLink(it))}" target="_blank" rel="noopener">Зар ↗</a>` : ""}</div>`}
       <div class="acts"><button class="btn small dark" type="button" data-card="${esc(id)}">Дэлгэрэнгүй</button><button class="btn small" type="button" data-edit="${esc(id)}">Засах</button><a class="btn small" href="${gdir(it)}" target="_blank" rel="noopener">Чиглэл ↗</a></div>`);
   }
   function selectItem(id, { pan = true, scroll = false } = {}) {
@@ -1202,7 +1222,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
   });
 
   // ---------- form ----------
-  const FIELDS = { name: "f_name", district: "f_district", area: "f_area", status: "f_status", visited: "f_visited", link: "f_link", contact: "f_contact", price: "f_price", m2: "f_area_m2", fees: "f_fees", renoCost: "f_renoCost", renoWhat: "f_renoWhat", rooms: "f_rooms", floor: "f_floor", floors: "f_floors", year: "f_year", build: "f_build", facing: "f_facing", pros: "f_pros", cons: "f_cons", notes: "f_notes", gPrice: "f_gPrice", gValue: "f_gValue", gRent: "f_gRent", gHeated: "f_gHeated", gCert: "f_gCert", gWalk: "f_gWalk", gNotes: "f_gNotes" };
+  const FIELDS = { name: "f_name", district: "f_district", area: "f_area", status: "f_status", visited: "f_visited", link: "f_link", contact: "f_contact", price: "f_price", m2: "f_area_m2", fees: "f_fees", renoCost: "f_renoCost", renoWhat: "f_renoWhat", rooms: "f_rooms", floor: "f_floor", floors: "f_floors", year: "f_year", build: "f_build", facing: "f_facing", pros: "f_pros", cons: "f_cons", notes: "f_notes", phone: "f_phone", gPrice: "f_gPrice", gValue: "f_gValue", gRent: "f_gRent", gHeated: "f_gHeated", gCert: "f_gCert", gWalk: "f_gWalk", gNotes: "f_gNotes" };
   const NUMS = ["price", "m2", "fees", "renoCost", "rooms", "floor", "floors", "year", "gPrice", "gValue", "gRent", "gWalk"];
   function buildForm() {
     $("f_district").innerHTML = `<option value=""></option>` + DISTRICTS.map((d) => `<option>${d}</option>`).join("");
@@ -1259,6 +1279,7 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
     setRadio("reno", it?.reno); for (const r of RATES) setRadio(r.k, it?.[r.k]);
     setRadio("gType", it?.gType || ""); setRadio("gDeal", it?.gDeal || "included");
     for (const [k] of CHECKS) $("c_" + k).value = it?.checks?.[k] || "";
+    const ad = it ? adLink(it) : ""; $("adHint").hidden = !ad; if (ad) $("adHintLink").href = ad;
     $("delBtn").hidden = !it; disarmDelete(); $("formErr").hidden = true; $("f_coords").value = "";
     updateCalc(); updateWords();
     $("scrim").hidden = false; $("sheet").hidden = false;
@@ -1318,6 +1339,8 @@ window.BAIR_API = "https://fitness.tagent.space/api/bair";
 
   // ---------- events ----------
   document.addEventListener("click", (e) => {
+    const ap = e.target.closest("[data-addphone]");
+    if (ap) { e.preventDefault(); openSheet(ap.dataset.addphone); setTimeout(() => $("f_phone").focus(), 80); return; }
     if (e.target.closest("[data-nosel]")) { const cb = e.target.closest("[data-cmp]"); if (cb) toggleCompare(cb.dataset.cmp, cb.checked); return; }
     const t = e.target.closest("[data-edit],[data-add],[data-f],[data-place],[data-mapjump],[data-card],[data-cancel-place],[data-uncmp],[data-sel],#steps button,.dot");
     if (!t) return;
