@@ -15,6 +15,9 @@ const PINS = {
   cleaner: process.env.CLEANER_PIN || '1111',
   mom: process.env.MOM_PIN || '2222',
 };
+for (const [role, env] of [['cleaner', 'CLEANER_PIN'], ['mom', 'MOM_PIN']]) {
+  if (!process.env[env]) console.warn(`АНХААР: ${env} тохируулаагүй — "${role}" анхдагч PIN-ээр нэвтэрнэ. Railway Variables дээр заавал тохируул.`);
+}
 const SESSION_DAYS = Number(process.env.SESSION_DAYS || 180);
 const TZ = process.env.TZ_NAME || 'Asia/Ulaanbaatar';
 
@@ -232,6 +235,8 @@ function noteFail(ip) {
   const f = fails.get(ip) || { n: 0, t: Date.now() };
   if (Date.now() - f.t > 15 * 60e3) { f.n = 0; f.t = Date.now(); }
   f.n++; fails.set(ip, f);
+  // хуучирсан бичлэгүүдийг цэвэрлэнэ — map хязгааргүй томрохгүй
+  if (fails.size > 1000) for (const [k, v] of fails) if (Date.now() - v.t > 15 * 60e3) fails.delete(k);
 }
 
 // ---------- AI (сонголттой) ----------

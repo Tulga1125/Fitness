@@ -70,6 +70,10 @@ on your phone, synced across your devices, behind your own passkey login.
 >
 > Railway's private network is IPv6-only, which is what `RESOLVER_IPV6` exists for, and its builder
 > refuses a Dockerfile with a `VOLUME` instruction, which is why `api/Dockerfile` has none.
+>
+> The repo also carries [`mom-cleaner/`](mom-cleaner/), a separate house-cleaner PWA for
+> `mom.sonorgroup.mn`: its own Railway service (root directory `/mom-cleaner`, volume at `/data`,
+> `CLEANER_PIN` / `MOM_PIN` variables) that runs on its Railway URL until the domain is pointed at it.
 
 ## Why openGym
 

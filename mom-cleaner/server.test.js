@@ -8,7 +8,7 @@ process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'mom-test-'));
 process.env.CLEANER_PIN = '1111';
 process.env.MOM_PIN = '2222';
 const mod = await import('./server.js');
-const { server, levelFor, visitPay, payroll, streak, completionRate, emptyDb } = mod;
+const { server, levelFor, visitPay, payroll, streak, completionRate, emptyDb, localDate } = mod;
 
 // ---- цэвэр функцууд ----
 test('levelFor: түвшин ба явц', () => {
@@ -108,7 +108,9 @@ test('API: нэвтрэх → ирлээ → ажил чеклэх → явла�
   // хүсэлт хоёр талаас, хуваарь, цалин өгсөн бүртгэл
   assert.equal((await call('m', '/api/requests', { text: 'Хөшиг угаа' })).status, 200);
   assert.equal((await call('c', '/api/requests', { text: 'Нунтаг дууссан' })).status, 200);
-  assert.equal((await call('c', '/api/schedule', { date: '2026-11-01', time: '10:00', note: 'ердийн' })).status, 200);
+  // /api/state зөвхөн сүүлийн 7 хоногоос хойшхи хуваарийг буцаадаг тул огноог маргааш гэж авна
+  const tomorrow = localDate(Date.now() + 864e5);
+  assert.equal((await call('c', '/api/schedule', { date: tomorrow, time: '10:00', note: 'ердийн' })).status, 200);
   assert.equal((await call('c', '/api/schedule', { date: 'bad' })).status, 400);
   assert.equal((await call('c', '/api/payments', { amount: 10000 })).status, 403);
   assert.equal((await call('m', '/api/payments', { amount: 10000, date: '2026-10-25' })).status, 200);
